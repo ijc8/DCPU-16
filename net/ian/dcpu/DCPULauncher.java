@@ -2,9 +2,10 @@ package net.ian.dcpu;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 
 import net.ian.dcpu.DCPU.Register;
@@ -13,11 +14,31 @@ public class DCPULauncher {
 	DCPU cpu;
 
 	public DCPULauncher() {
-		short mem[] = {0x1};
+		int mem[] = {0xfc01};
+		System.out.println("HEY " + Integer.toHexString(mem[0]) + " " + Integer.toBinaryString(mem[0]));
 		cpu = new DCPU(mem);
 	}
 	
+	public void loadFont() throws IOException {
+		BufferedImage img = ImageIO.read(DCPU.class.getResource("/net/ian/dcpu/res/font.png"));
+		BufferedImage font[][] = new BufferedImage[img.getWidth() / 4][];
+		
+		for (int x = 0; x < img.getWidth() / 4; x++) {
+			font[x] = new BufferedImage[img.getHeight() / 8];
+			for (int y = 0; y < img.getHeight() / 8; y++) {
+				font[x][y] = img.getSubimage(x * 4, y * 8, 4, 8);
+			}
+		}
+	}
+	
 	public void launch() {
+		try {
+			loadFont();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
         JFrame frame = new JFrame("DCPU-16");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
@@ -67,21 +88,23 @@ public class DCPULauncher {
         
         cpu.running = true;
         while (cpu.running) {
+        	cpu.cycle();
+        	
         	for (Register r : Register.values()) {
         		int value = cpu.getRegister(r).value;
         		registers[0][r.ordinal()].setText(Integer.toBinaryString(value));
-        		registers[1][r.ordinal()].setText(Integer.toHexString(value));
+        		registers[1][r.ordinal()].setText("0x" + Integer.toHexString(value));
         		registers[2][r.ordinal()].setText(Integer.toString(value));
         	}
         	
         	for (int i = 0; i < special.length; i++) {
         		int value = special[i].value;
         		specialLabels[i][0].setText(Integer.toBinaryString(value));
-        		specialLabels[i][1].setText(Integer.toHexString(value));
+        		specialLabels[i][1].setText("0x" + Integer.toHexString(value));
         		specialLabels[i][2].setText(Integer.toString(value));
         	}
         	
-        	cpu.cycle();
+        	System.out.println("Next cycle...");
         }
 	}
 	

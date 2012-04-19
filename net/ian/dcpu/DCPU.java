@@ -9,10 +9,10 @@ public class DCPU {
 	public enum Register { A, B, C, X, Y, Z, I, J };
 	
 	public DCPU() {
-		this(new short[0]);
+		this(new int[0]);
 	}
 
-	public DCPU(short[] mem) {
+	public DCPU(int[] mem) {
 		register = new Cell[11];
 		for (int i = 0; i < 11; i++)
 			register[i] = new Cell(0);
@@ -24,6 +24,10 @@ public class DCPU {
 		PC = new Cell(0);
 		O = new Cell(0);
 	}
+	
+	private void debug(Object o) {
+		System.out.println(o);
+	}
 
 	public Cell getRegister(Register r) {
 		return register[r.ordinal()];
@@ -34,30 +38,43 @@ public class DCPU {
 	}
 	
 	private Cell handleArgument(int code) {
-		System.out.println(code);
-		if (code >= 0x0 && code <= 0x7)
+		System.out.printf("0x%s: ", code, Integer.toHexString(code));
+		if (code >= 0x0 && code <= 0x7) {
+			debug(Register.values()[code]);
 			return register[code];
-		else if (code >= 0x8 && code <= 0xf)
-			return memory[register[code % 8].value];
-		else if (code >= 0x10 && code <= 0x17)
-			return null; // Not really sure what this is supposed to do...
-		else if (code == 0x18)
+		} else if (code >= 0x8 && code <= 0xf) {
+			System.out.printf("[%s]\n", Register.values()[code - 0x8]);
+			return memory[register[code - 0x8].value];
+		} else if (code >= 0x10 && code <= 0x17) {
+			System.out.printf("[next word + %s]\n", Register.values()[code - 0x10]);
+			return memory[memory[PC.value++].value + register[code - 0x10].value];
+		} else if (code == 0x18) {
+			debug("POP");
 			return memory[SP.value++];
-		else if (code == 0x19)
+		} else if (code == 0x19) {
+			debug("PEEK");
 			return memory[SP.value];
-		else if (code == 0x1a)
+		} else if (code == 0x1a) {
+			debug("PUSH");
 			return memory[--SP.value];
-		else if (code == 0x1b)
+		} else if (code == 0x1b) {
+			debug("SP");
 			return SP;
-		else if (code == 0x1c)
+		} else if (code == 0x1c) {
+			debug("PC");
 			return PC;
-		else if (code == 0x1d)
+		} else if (code == 0x1d) {
+			debug("O");
 			return O;
-		else if (code == 0x1e)
+		} else if (code == 0x1e) {
+			debug("[next word]");
 			return memory[memory[PC.value++].value];
-		else if (code == 0x1f)
+		} else if (code == 0x1f) {
+			debug("next word (literal)");
 			return memory[PC.value++];
-		return new Cell(code);
+		}
+		debug("literal: " + (code - 0x20));
+		return new Cell(code - 0x20);
 	}
 	
 	private void skipInstruction() {
@@ -81,21 +98,26 @@ public class DCPU {
 		int b = cellB.value;
 		switch (opcode) {
 		case 0x1: // SET a to b
+			debug("SET");
 			a = b;
 			break;
 		case 0x2: // ADD b to a
+			debug("ADD");
 			O.value = (a += b) > 0xffff ? 1 : 0;
 			a &= 0xffff;
 			break;
 		case 0x3: // SUBTRACT b from a
+			debug("SUB");
 			O.value = (a -= b) < 0 ? 0xffff : 0;
 			a = a < 0 ? 0 : a;
 			break;
 		case 0x4: // MUL multiplies a by b
+			debug("MUL");
 			O.value = (a *= b) >> 16 & 0xffff;
 			a &= 0xffff;
 			break;
 		case 0x5: // DIV divides a by b
+			debug("DIV");
 			if (b == 0) {
 				a = 0;
 				O.value = 0;
@@ -105,42 +127,53 @@ public class DCPU {
 			}
 			break;
 		case 0x6: // MOD (sets a to a % b)
+			debug("MOD");
 			a = (b == 0) ? 0 : a % b;
 			break;
 		case 0x7: // SHL shifts a left by b
+			debug("SHL");
 			O.value = a << b >> 16 & 0xffff;
 			a = a << b & 0xffff;
 			break;
 		case 0x8: // SHR shifts a right by b
+			debug("SHR");
 			O.value = a << 16 >>b & 0xffff;
 			a >>= b;
 			break;
 		case 0x9: // AND sets a to a & b
+			debug("AND");
 			a &= b;
 			break;
 		case 0xa: // BOR sets a to a | b
+			debug("BOR");
 			a |= b;
 			break;
 		case 0xb: // XOR sets a to a ^ b
+			debug("XOR");
 			a ^= b;
 			break;
 		case 0xc: // IFE performs next instruction if a == b
-			// TODO: This *will not work properly* if the next instruction is > 1 word
+			debug("IFE");
 			if (a != b)
 				skipInstruction();
 			break;
 		case 0xd: // IFN performs next instruction if a != b
+			debug("IFN");
 			if (a == b)
 				skipInstruction();
 			break;
 		case 0xe: // IFG performs next instruction if a > b
+			debug("IFG");
 			if (a <= b)
 				skipInstruction();
 			break;
 		case 0xf: // IFB performs next instructions if (a & b) != 0
+			debug("IFB");
 			if ((a & b) == 0)
 				skipInstruction();
 			break;
+		default:
+			debug("INVALID BASIC OPERATION");
 		}
 		cellA.value = a;
 		cellB.value = b;
@@ -149,11 +182,15 @@ public class DCPU {
 	private void processSpecial(int opcode, Cell a) {
 		switch (opcode) {
 		case 0x0: // EXIT custom code, makes the processor stop.
+			debug("EXIT (custom)");
 			running = false;
 			break;
 		case 0x1: // JSR pushes the address of the next instruction to the stack, sets PC to a
+			debug("JSR");
 			memory[--SP.value].value = a.value;
 			break;
+		default:
+			debug("INVALID SPECIAL OPERATION");
 		}
 	}
 	
@@ -167,35 +204,27 @@ public class DCPU {
 			rawA = instruction >> 6 & 0x3f;
 		} else {
 			// Basic opcode
-			opcode = instruction & 0x3;
-			rawA = instruction >> 4 & 0x3;
-			rawB = instruction >> 8 & 0x3;
+			opcode = instruction & 0xf;
+			rawA = instruction >> 4 & 0x3f;
+			rawB = instruction >> 10 & 0x3f;
 		}
 		
-		System.out.println(Integer.toBinaryString(instruction));
-		System.out.printf("opcode: %s\n", Integer.toBinaryString(opcode));
-		System.out.printf("argument A: %s; argument B: %s\n", Integer.toBinaryString(rawA), rawB == -1 ? null : Integer.toBinaryString(rawB));
+		//System.out.println(Integer.toBinaryString(instruction));
+		//System.out.printf("opcode: %s\n", Integer.toBinaryString(opcode));
+		//System.out.printf("argument A: %s; argument B: %s\n", Integer.toBinaryString(rawA), rawB == -1 ? null : Integer.toBinaryString(rawB));
 		
+		System.out.print("A: ");
 		Cell a = handleArgument(rawA), b = null;
-		if (rawB != -1)
+		if (rawB != -1) {
+			System.out.print("B: ");
 			b = handleArgument(rawB);
-		
-		System.out.printf("eval'd A: %s (%s); eval'd B: %s (%s)\n", a, a, b, b == null ? null : b.value);
-		
+		}
+				
 		if (b != null)
 			processBasic(opcode, a, b);
 		else
 			processSpecial(opcode, a);
 
 		PC.value += 1;
-	}
-	
-	public void run() {
-		System.out.println("Running...");
-		running = true;
-		while (running == true) {
-			cycle();
-			System.out.println("Next cycle...\n");
-		}
 	}
 }

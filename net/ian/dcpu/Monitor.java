@@ -10,7 +10,7 @@ public class Monitor extends Canvas {
 	
 	public static final int WIDTH = 128;
 	public static final int HEIGHT = 96;
-	public static final int SCALE = 4;
+	public static final int SCALE = 5;
 	
 	public Monitor() {
         setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
