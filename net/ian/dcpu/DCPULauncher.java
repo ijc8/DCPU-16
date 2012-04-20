@@ -1,6 +1,7 @@
 package net.ian.dcpu;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -14,31 +15,11 @@ public class DCPULauncher {
 	DCPU cpu;
 
 	public DCPULauncher() {
-		int mem[] = {0xfc01};
-		System.out.println("HEY " + Integer.toHexString(mem[0]) + " " + Integer.toBinaryString(mem[0]));
+		int mem[] = {0xfc01, 0x0071, 0x7c31, 0x002a, 0x1ff1, 0x8000, 0x7777};
 		cpu = new DCPU(mem);
 	}
 	
-	public void loadFont() throws IOException {
-		BufferedImage img = ImageIO.read(DCPU.class.getResource("/net/ian/dcpu/res/font.png"));
-		BufferedImage font[][] = new BufferedImage[img.getWidth() / 4][];
-		
-		for (int x = 0; x < img.getWidth() / 4; x++) {
-			font[x] = new BufferedImage[img.getHeight() / 8];
-			for (int y = 0; y < img.getHeight() / 8; y++) {
-				font[x][y] = img.getSubimage(x * 4, y * 8, 4, 8);
-			}
-		}
-	}
-	
-	public void launch() {
-		try {
-			loadFont();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
+	public void launch() {	
         JFrame frame = new JFrame("DCPU-16");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
@@ -89,6 +70,14 @@ public class DCPULauncher {
         cpu.running = true;
         while (cpu.running) {
         	cpu.cycle();
+        	
+        	for (int i = 0x8000; i < 0x8180; i++) {
+        		Color color = Monitor.convertColor(cpu.memory[i].value);
+        		if (cpu.memory[i].value != 0)
+        			System.out.println(cpu.memory[i]);
+        		monitor.colors[i - 0x8000] = color;
+        	}
+        	monitor.repaint();
         	
         	for (Register r : Register.values()) {
         		int value = cpu.getRegister(r).value;

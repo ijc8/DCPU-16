@@ -5,6 +5,7 @@ public class DCPU {
 	public Cell[] memory;
 	public Cell SP, PC, O;
 	public boolean running;
+	public int instructionCount = 0;
 	
 	public enum Register { A, B, C, X, Y, Z, I, J };
 	
@@ -38,7 +39,7 @@ public class DCPU {
 	}
 	
 	private Cell handleArgument(int code) {
-		System.out.printf("0x%s: ", code, Integer.toHexString(code));
+		System.out.printf("0x%s: ", Integer.toHexString(code));
 		if (code >= 0x0 && code <= 0x7) {
 			debug(Register.values()[code]);
 			return register[code];
@@ -47,7 +48,7 @@ public class DCPU {
 			return memory[register[code - 0x8].value];
 		} else if (code >= 0x10 && code <= 0x17) {
 			System.out.printf("[next word + %s]\n", Register.values()[code - 0x10]);
-			return memory[memory[PC.value++].value + register[code - 0x10].value];
+			return memory[memory[++PC.value].value + register[code - 0x10].value];
 		} else if (code == 0x18) {
 			debug("POP");
 			return memory[SP.value++];
@@ -68,10 +69,10 @@ public class DCPU {
 			return O;
 		} else if (code == 0x1e) {
 			debug("[next word]");
-			return memory[memory[PC.value++].value];
+			return memory[memory[++PC.value].value];
 		} else if (code == 0x1f) {
 			debug("next word (literal)");
-			return memory[PC.value++];
+			return memory[++PC.value];
 		}
 		debug("literal: " + (code - 0x20));
 		return new Cell(code - 0x20);
@@ -195,6 +196,8 @@ public class DCPU {
 	}
 	
 	public void cycle() {
+		debug("Instruction #" + instructionCount);
+		
 		int instruction = memory[PC.value].value;
 		int opcode;
 		int rawA, rawB = -1;
@@ -225,6 +228,7 @@ public class DCPU {
 		else
 			processSpecial(opcode, a);
 
-		PC.value += 1;
+		PC.value++;
+		instructionCount++;
 	}
 }
