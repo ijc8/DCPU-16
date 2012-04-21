@@ -59,6 +59,7 @@ public class Assembler {
 		int index;
 		if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
 			return single(index);
+		
 		try {
 			int n = Integer.parseInt(arg);
 			if (n < 31)
@@ -66,8 +67,20 @@ public class Assembler {
 			else
 				return pair(0x1f, n);
 		} catch (NumberFormatException _) {
-			// Whelp, it wasn't a number.
+			// Whelp, it wasn't a decimal number.
 		}
+		if (arg.startsWith("0x")) {
+			try {
+				int n = Integer.parseInt(arg.substring(2), 16);
+				if (n < 31)
+					return single(n + 0x20);
+				else
+					return pair(0x1f, n);
+			} catch (NumberFormatException _) {
+				// Whelp, it wasn't a hexadecimal number.				
+			}
+		}
+		
 		if (arg.startsWith("[")) {
 			if (!arg.endsWith("]"))
 				return single(-1);

@@ -15,7 +15,7 @@ public class DCPULauncher {
 
 	public DCPULauncher() {
 		List<Integer> mem = new ArrayList<Integer>();
-		mem.addAll(Assembler.assemble("SET", "A", Integer.toString(0x8000)));
+		mem.addAll(Assembler.assemble("SET", "A", "0x8000"));
 		mem.addAll(Assembler.assemble("SET", "[A]", "4"));
 		mem.addAll(Assembler.assemble("SET", "B", "[A]"));
 		mem.addAll(Assembler.assemble("SET", "X", "22"));
