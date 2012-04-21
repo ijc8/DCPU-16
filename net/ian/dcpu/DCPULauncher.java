@@ -13,8 +13,9 @@ public class DCPULauncher {
 	public DCPULauncher() {
 		int mem[] = {0x7c01, 0x8000, 0x7c81, 0x0004};
 		cpu = new DCPU(mem);
+		System.out.println(Integer.toHexString(Assembler.compile(0x1, 0x0, 0x1f)));
+		System.out.println(Integer.toHexString(Assembler.assemble("SET", "A", "B")));
 	}
-
 	
 	public void launch() {	
         JFrame frame = new JFrame("DCPU-16");
