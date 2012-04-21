@@ -3,10 +3,6 @@ package net.ian.dcpu;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridLayout;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-
-import javax.imageio.ImageIO;
 import javax.swing.*;
 
 import net.ian.dcpu.DCPU.Register;
@@ -15,9 +11,10 @@ public class DCPULauncher {
 	DCPU cpu;
 
 	public DCPULauncher() {
-		int mem[] = {0xfc01, 0x0071, 0x7c31, 0x002a, 0x1ff1, 0x8000, 0x7777};
+		int mem[] = {0x7c01, 0x8000, 0x7c81, 0x0004};
 		cpu = new DCPU(mem);
 	}
+
 	
 	public void launch() {	
         JFrame frame = new JFrame("DCPU-16");

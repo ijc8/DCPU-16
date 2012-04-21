@@ -36,10 +36,14 @@ public class Monitor extends Canvas {
 	}
 	
 	public static Color convertColor(int colorBits) {
-		boolean h = (colorBits & 0x8) == 1;
-		int r = 0xAA * (colorBits & 0x4) + (h ? 0x55 : 0);
-		int g = 0xAA * (colorBits & 0x2) + (h ? 0x55 : 0);
-		int b = 0xAA * (colorBits & 0x1) + (h ? 0x55 : 0);
+		boolean h = (colorBits >> 3 & 1) == 1;
+		if (colorBits != 0)
+			System.out.printf("color bits: %d (%s)\n", colorBits, Integer.toBinaryString(colorBits));
+		int r = 0xAA * (colorBits >> 2 & 1) + (h ? 0x55 : 0);
+		int g = 0xAA * (colorBits >> 1 & 1) + (h ? 0x55 : 0);
+		int b = 0xAA * (colorBits >> 0 & 1) + (h ? 0x55 : 0);
+		if (colorBits != 0)
+			System.out.printf("h (%d), r (%d), g (%d), b (%d)\n", h ? 1 : 0, r, g, b);
 		return new Color(r, g, b);
 	}
 	
