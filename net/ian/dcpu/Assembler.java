@@ -29,6 +29,16 @@ public class Assembler {
 		int index;
 		if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
 			return index;
+		try {
+			int n = Integer.parseInt(arg);
+			if (n < 31)
+				return n + 0x20;
+			// TODO: Assemble instructions requiring multiple words.
+			else
+				return 0x1f;
+		} catch (NumberFormatException _) {
+			// Whelp, it wasn't a number.
+		}
 		if (arg.startsWith("[")) {
 			if (!arg.endsWith("]"))
 				return -1;
