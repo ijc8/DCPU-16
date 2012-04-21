@@ -32,14 +32,13 @@ public class DCPULauncher {
         panel.add(new JLabel("Dec"));
         
         // 3 for Bin, Hex, and Dec
-        JLabel registers[][] = new JLabel[3][];
-        for (int i = 0; i < 3; i++)
-            registers[i] = new JLabel[Register.values().length];
+        JLabel registers[][] = new JLabel[Register.values().length][];
         for (Register r : Register.values()) {
+        	registers[r.ordinal()] = new JLabel[3];
         	panel.add(new JLabel(r.toString() + ": "));
         	for (int i = 0; i < 3; i++) {
-        		registers[i][r.ordinal()] = new JLabel();
-        		panel.add(registers[i][r.ordinal()]);
+        		registers[r.ordinal()][i] = new JLabel();
+        		panel.add(registers[r.ordinal()][i]);
         	}
         }
         
@@ -84,26 +83,22 @@ public class DCPULauncher {
         	}
         	monitor.repaint();
         	
-        	for (Register r : Register.values()) {
-        		int value = cpu.getRegister(r).value;
-        		registers[0][r.ordinal()].setText(Integer.toBinaryString(value));
-        		registers[1][r.ordinal()].setText("0x" + Integer.toHexString(value));
-        		registers[2][r.ordinal()].setText(Integer.toString(value));
-        	}
+        	for (Register r : Register.values())
+        		setLabels(registers[r.ordinal()], cpu.getRegister(r).value);
         	
-        	for (int i = 0; i < special.length; i++) {
-        		int value = special[i].value;
-        		specialLabels[i][0].setText(Integer.toBinaryString(value));
-        		specialLabels[i][1].setText("0x" + Integer.toHexString(value));
-        		specialLabels[i][2].setText(Integer.toString(value));
-        	}
+        	for (int i = 0; i < special.length; i++)
+        		setLabels(specialLabels[i], special[i].value);
         	
-        	instructionLabel[0].setText(Integer.toBinaryString(cpu.instructionCount));
-        	instructionLabel[1].setText(Integer.toHexString(cpu.instructionCount));
-        	instructionLabel[2].setText(Integer.toString(cpu.instructionCount));
+        	setLabels(instructionLabel, cpu.instructionCount);
         	
         	System.out.println("Next cycle...");
         }
+	}
+	
+	private void setLabels(JLabel[] labels, int value) {
+    	labels[0].setText(Integer.toBinaryString(value));
+    	labels[1].setText("0x" + Integer.toHexString(value));
+    	labels[2].setText(Integer.toString(value));
 	}
 	
 	public static void main(String[] args) {
