@@ -54,31 +54,35 @@ public class Assembler {
 		int[] p = {a, b};
 		return p;
 	}
+	
+	private static int parseInt(String s) {
+		try {
+			int n = Integer.parseInt(s);
+			return n;
+		} catch (NumberFormatException _) {
+			// Whelp, it wasn't a decimal number.
+		}
+		if (s.startsWith("0x")) {
+			try {
+				int n = Integer.parseInt(s.substring(2), 16);
+				return n;
+			} catch (NumberFormatException _) {
+				// Whelp, it wasn't a hexadecimal number.				
+			}
+		}
+		return -1;
+	}
 	 
 	private static int[] handleArgument(String arg) {
 		int index;
 		if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
 			return single(index);
 		
-		try {
-			int n = Integer.parseInt(arg);
+		int n = parseInt(arg);
+		if (n != -1) {
 			if (n < 31)
 				return single(n + 0x20);
-			else
-				return pair(0x1f, n);
-		} catch (NumberFormatException _) {
-			// Whelp, it wasn't a decimal number.
-		}
-		if (arg.startsWith("0x")) {
-			try {
-				int n = Integer.parseInt(arg.substring(2), 16);
-				if (n < 31)
-					return single(n + 0x20);
-				else
-					return pair(0x1f, n);
-			} catch (NumberFormatException _) {
-				// Whelp, it wasn't a hexadecimal number.				
-			}
+			return pair(0x1f, n);
 		}
 		
 		if (arg.startsWith("[")) {
