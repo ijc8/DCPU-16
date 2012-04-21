@@ -72,7 +72,7 @@ public class DCPU {
 			return memory[memory[++PC.value].value];
 		} else if (code == 0x1f) {
 			debug("next word (literal)");
-			return memory[++PC.value];
+			return new Cell(memory[++PC.value].value);
 		}
 		debug("literal: " + (code - 0x20));
 		return new Cell(code - 0x20);
