@@ -1,6 +1,8 @@
 package net.ian.dcpu;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Assembler {
 	public static final String[] basic = { "SET", "ADD", "SUB", "MUL", "DIV", "MOD", "SHL", "SHR", "AND", "BOR", "XOR", "IFE", "IFN", "IFG", "IFB" };
@@ -15,42 +17,65 @@ public class Assembler {
 	}
 	
 	// This here is a poor man's assembler.
-	public static int assemble(String sOp, String sArg1, String sArg2) {
+	public static List<Integer> assemble(String sOp, String sArg1, String sArg2) {
 		boolean isBasic = (sArg2 != null);
 		int op = Arrays.asList(isBasic ? basic : special).indexOf(sOp) + 1;
-		int arg1 = handleArgument(sArg1);
-		int arg2 = -1;
-		if (isBasic)
-			arg2 = handleArgument(sArg2);
-		return compile(op, arg1, arg2);
+		int a, b = -1;
+		int[] argsA = handleArgument(sArg1);
+		
+		a = argsA[0];	
+			
+		int[] argsB = null;
+		if (isBasic) {
+			argsB = handleArgument(sArg2);
+			b = argsB[0];
+		}
+		
+		ArrayList<Integer> words = new ArrayList<Integer>();
+		words.add(compile(op, a, b));
+		if (argsA.length > 1)
+			words.add(argsA[1]);
+		if (argsB.length > 1)
+			words.add(argsB[1]);
+				
+		return words;
 	}
 	
-	private static int handleArgument(String arg) {
+	public static List<Integer> assemble(String op, String arg) {
+		return assemble(op, arg, null);
+	}
+	
+	private static int[] single(int n) {
+		int[] s = {n};
+		return s;
+	}
+	
+	private static int[] pair(int a, int b) {
+		int[] p = {a, b};
+		return p;
+	}
+	 
+	private static int[] handleArgument(String arg) {
 		int index;
 		if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
-			return index;
+			return single(index);
 		try {
 			int n = Integer.parseInt(arg);
 			if (n < 31)
-				return n + 0x20;
-			// TODO: Assemble instructions requiring multiple words.
+				return single(n + 0x20);
 			else
-				return 0x1f;
+				return pair(0x1f, n);
 		} catch (NumberFormatException _) {
 			// Whelp, it wasn't a number.
 		}
 		if (arg.startsWith("[")) {
 			if (!arg.endsWith("]"))
-				return -1;
+				return single(-1);
 			arg = arg.substring(1, arg.length() - 1);
 			if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
-				return index + 0x8;
+				return single(index + 0x8);
 		}
-		return 0;
-	}
-
-	public static int assemble(String op, String arg) {
-		return assemble(op, arg, null);
+		return null;
 	}
 	
 	// Changes arguments into machine code. This is nice because arguments are 6 bits.

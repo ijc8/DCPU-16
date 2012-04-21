@@ -3,6 +3,9 @@ package net.ian.dcpu;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridLayout;
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.swing.*;
 
 import net.ian.dcpu.DCPU.Register;
@@ -11,10 +14,12 @@ public class DCPULauncher {
 	DCPU cpu;
 
 	public DCPULauncher() {
-		int mem[] = {0x7c01, 0x8000, 0x7c81, 0x0004, Assembler.assemble("SET", "B", "[A]"), Assembler.assemble("SET", "X", "22")};
+		List<Integer> mem = new ArrayList<Integer>();
+		mem.addAll(Assembler.assemble("SET", "A", Integer.toString(0x8000)));
+		mem.addAll(Assembler.assemble("SET", "[A]", "4"));
+		mem.addAll(Assembler.assemble("SET", "B", "[A]"));
+		mem.addAll(Assembler.assemble("SET", "X", "22"));
 		cpu = new DCPU(mem);
-		System.out.println(Integer.toHexString(Assembler.compile(0x1, 0x0, 0x1f)));
-		System.out.println(Integer.toHexString(Assembler.assemble("SET", "A", "B")));
 	}
 	
 	public void launch() {	

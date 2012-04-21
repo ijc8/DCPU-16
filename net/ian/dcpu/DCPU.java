@@ -1,5 +1,7 @@
 package net.ian.dcpu;
 
+import java.util.List;
+
 public class DCPU {
 	public Cell[] register;
 	public Cell[] memory;
@@ -24,6 +26,19 @@ public class DCPU {
 		SP = new Cell(0xffff);
 		PC = new Cell(0);
 		O = new Cell(0);
+	}
+	
+	public DCPU(List<Integer> mem) {
+		this(integersToInts(mem));
+	}
+	
+	// This is here because Java wants constructor calls to be the first statement in another constructor (see above).
+	private static int[] integersToInts (List<Integer> mem) {
+		Integer[] integers = mem.toArray(new Integer[0]);
+		int[] ints = new int[integers.length];
+		for (int i = 0; i < ints.length; i++)
+			ints[i] = integers[i];
+		return ints;
 	}
 	
 	private void debug(Object o) {
