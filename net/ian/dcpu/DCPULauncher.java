@@ -11,7 +11,7 @@ public class DCPULauncher {
 	DCPU cpu;
 
 	public DCPULauncher() {
-		int mem[] = {0x7c01, 0x8000, 0x7c81, 0x0004};
+		int mem[] = {0x7c01, 0x8000, 0x7c81, 0x0004, Assembler.assemble("SET", "B", "[A]")};
 		cpu = new DCPU(mem);
 		System.out.println(Integer.toHexString(Assembler.compile(0x1, 0x0, 0x1f)));
 		System.out.println(Integer.toHexString(Assembler.assemble("SET", "A", "B")));
@@ -26,7 +26,7 @@ public class DCPULauncher {
         frame.add(monitor);
                
         JPanel panel = new JPanel(new GridLayout(0, 4));
-        panel.add(new JLabel("Registers:"));
+        panel.add(new JLabel("Registers"));
         panel.add(new JLabel("Bin"));
         panel.add(new JLabel("Hex"));
         panel.add(new JLabel("Dec"));
@@ -54,6 +54,13 @@ public class DCPULauncher {
         		specialLabels[i][j] = new JLabel();
         		panel.add(specialLabels[i][j]);
         	}
+        }
+        
+        panel.add(new JLabel("Instruction:"));
+        JLabel instructionLabel[] = new JLabel[3];
+        for (int i = 0; i < 3; i++) {
+        	instructionLabel[i] = new JLabel();
+        	panel.add(instructionLabel[i]);
         }
         
         frame.getContentPane().add(panel, BorderLayout.SOUTH);        
@@ -90,6 +97,10 @@ public class DCPULauncher {
         		specialLabels[i][1].setText("0x" + Integer.toHexString(value));
         		specialLabels[i][2].setText(Integer.toString(value));
         	}
+        	
+        	instructionLabel[0].setText(Integer.toBinaryString(cpu.instructionCount));
+        	instructionLabel[1].setText(Integer.toHexString(cpu.instructionCount));
+        	instructionLabel[2].setText(Integer.toString(cpu.instructionCount));
         	
         	System.out.println("Next cycle...");
         }
