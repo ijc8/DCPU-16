@@ -18,6 +18,7 @@ public class DCPULauncher {
 		mem.addAll(Assembler.assemble("SET", "A", "0x8000"));
 		mem.addAll(Assembler.assemble("SET", "[A]", "4"));
 		mem.addAll(Assembler.assemble("SET", "B", "[A]"));
+		mem.addAll(Assembler.assemble("SET", "C", "[1]"));
 		mem.addAll(Assembler.assemble("SET", "X", "22"));
 		cpu = new DCPU(mem);
 	}

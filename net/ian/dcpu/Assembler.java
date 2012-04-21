@@ -74,8 +74,8 @@ public class Assembler {
 	}
 	 
 	private static int[] handleArgument(String arg) {
-		int index;
-		if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
+		int index = Arrays.asList(registers).indexOf(arg);
+		if (index != -1)
 			return single(index);
 		
 		int n = parseInt(arg);
@@ -91,6 +91,9 @@ public class Assembler {
 			arg = arg.substring(1, arg.length() - 1);
 			if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
 				return single(index + 0x8);
+			if ((n = parseInt(arg)) != -1) {
+				return pair(0x1e, n);
+			}
 		}
 		return null;
 	}
