@@ -21,12 +21,12 @@ public class Monitor extends Canvas {
 	public MonitorCell cells[];
 	
 	public static class MonitorCell {
-		boolean show = false;
 		char character;
-		Color bgColor;
+		Color fgColor, bgColor;
 		
-		public MonitorCell(char c, Color bg) {
+		public MonitorCell(char c, Color fg, Color bg) {
 			character = c;
+			fgColor = fg;
 			bgColor = bg;
 		}
 	}
@@ -38,7 +38,7 @@ public class Monitor extends Canvas {
         
         cells = new MonitorCell[32 * 12];
         for (int i = 0; i < 32 * 12; i++)
-        	cells[i] = new MonitorCell((char)0, Color.BLACK);
+        	cells[i] = new MonitorCell((char)0, Color.BLACK, Color.BLACK);
         
         try {
 			loadFont();
@@ -49,13 +49,11 @@ public class Monitor extends Canvas {
 	
 	public static Color convertColor(int colorBits) {
 		boolean h = (colorBits >> 3 & 1) == 1;
-		if (colorBits != 0)
-			System.out.printf("color bits: %d (%s)\n", colorBits, Integer.toBinaryString(colorBits));
+
 		int r = 0xAA * (colorBits >> 2 & 1) + (h ? 0x55 : 0);
 		int g = 0xAA * (colorBits >> 1 & 1) + (h ? 0x55 : 0);
 		int b = 0xAA * (colorBits >> 0 & 1) + (h ? 0x55 : 0);
-		if (colorBits != 0)
-			System.out.printf("h (%d), r (%d), g (%d), b (%d)\n", h ? 1 : 0, r, g, b);
+		
 		return new Color(r, g, b);
 	}
 	
@@ -66,10 +64,7 @@ public class Monitor extends Canvas {
 		g.scale(SCALE, SCALE);
 		g.drawImage(img, 0, 0, null);
 		g.dispose();
-		
-		System.out.printf("w: %d, h: %d\n", img2.getWidth(), img2.getHeight());
-		
-		//BufferedImage img3 = (BufferedImage)img.getScaledInstance(img.getWidth() * SCALE, img.getHeight() * SCALE, Image.SCALE_DEFAULT);
+			
 		font = new BufferedImage[img2.getWidth() / 4 * (img2.getHeight() / 8)];
 		
 		for (int x = 0; x < img.getWidth() / 4; x++) {
@@ -79,15 +74,34 @@ public class Monitor extends Canvas {
 		}
 	}
 
-	public void paint(Graphics g) {
+	private BufferedImage replaceColor(BufferedImage img, Color fgColor, Color bgColor) {
+		int fgColorRGB = fgColor.getRGB();
+		int bgColorRGB = bgColor.getRGB();
+		
+		BufferedImage img2 = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_RGB);
+		Graphics2D g = img2.createGraphics();
+		g.drawImage(img, 0, 0, null);
+		g.dispose();
+		
+		for (int x = 0; x < img2.getWidth(); x++) {
+			for (int y = 0; y < img2.getHeight(); y++) {
+				int rgb = img2.getRGB(x, y);
+				if (rgb == Color.BLACK.getRGB())
+					img2.setRGB(x, y, bgColorRGB);
+				else
+					img2.setRGB(x, y, fgColorRGB);
+			}
+		}
+		return img2;
+	}
+
+	public void paint(Graphics gr) {
+		Graphics2D g = (Graphics2D)gr; 
 		g.setColor(Color.BLACK);
 		for (int x = 0; x < WIDTH / 4; x++) {
 			for (int y = 0; y < HEIGHT / 8; y++) {
 				MonitorCell cell = cells[y * 32 + x];
-				if (cell.show)
-					g.drawImage(font[cell.character], x * 4 * SCALE, y * 8 * SCALE, cell.bgColor, null);
-				else
-					g.fillRect(x * 4 * SCALE, y * 8 * SCALE, 4 * SCALE, 8 * SCALE);
+				g.drawImage(replaceColor(font[cell.character], cell.fgColor, cell.bgColor), x * 4 * SCALE, y * 8 * SCALE, null);
 			}
 		}
 	}
