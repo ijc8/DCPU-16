@@ -54,6 +54,9 @@ public class Monitor extends Canvas {
 		int g = 0xAA * (colorBits >> 1 & 1) + (h ? 0x55 : 0);
 		int b = 0xAA * (colorBits >> 0 & 1) + (h ? 0x55 : 0);
 		
+		//if ((colorBits & 0xf) == 6)
+			//g -= 0x55;
+		
 		return new Color(r, g, b);
 	}
 	
