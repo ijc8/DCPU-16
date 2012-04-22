@@ -15,11 +15,12 @@ public class DCPULauncher {
 
 	public DCPULauncher() {
 		List<Integer> mem = new ArrayList<Integer>();
-		mem.addAll(Assembler.assemble("SET", "A", "0x8000"));
-		mem.addAll(Assembler.assemble("SET", "[A]", "4"));
-		mem.addAll(Assembler.assemble("SET", "B", "[A]"));
-		mem.addAll(Assembler.assemble("SET", "C", "[1]"));
-		mem.addAll(Assembler.assemble("SET", "X", "22"));
+		int init = 0x80c9;
+		String message = "Hello, world!";
+		for (int i = 0; i < message.length(); i++) {
+			mem.addAll(Assembler.assemble("SET", "[" + init + "]", Integer.toString(message.charAt(i))));
+			init++;
+		}
 		cpu = new DCPU(mem);
 	}
 	
@@ -82,10 +83,19 @@ public class DCPULauncher {
         	cpu.cycle();
         	
         	for (int i = 0x8000; i < 0x8180; i++) {
-        		Color color = Monitor.convertColor(cpu.memory[i].value);
+        		char character = (char)(cpu.memory[i].value & 127);
+        		Color color = Monitor.convertColor(cpu.memory[i].value >> 8);
         		if (cpu.memory[i].value != 0)
-        			System.out.println(cpu.memory[i]);
-        		monitor.colors[i - 0x8000] = color;
+        			System.out.printf("cpu.memory[0x%x] = %s\n", i, cpu.memory[i]);
+        		Monitor.MonitorCell cell = monitor.cells[i - 0x8000];
+        		cell.character = character;
+        		cell.bgColor = color;
+        		if (cpu.memory[i].value != 0) {
+        			cell.character = character;
+        			cell.bgColor = color;
+        			cell.show = true;
+        		} else
+        			cell.show = false;
         	}
         	monitor.repaint();
         	
