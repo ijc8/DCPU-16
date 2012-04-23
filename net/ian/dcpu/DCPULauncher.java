@@ -15,6 +15,9 @@ public class DCPULauncher {
 
 	public DCPULauncher() {
 		List<Integer> mem = new ArrayList<Integer>();
+		mem.addAll(Assembler.assemble("SET", "[0x8180]", "0x3e55"));
+		mem.addAll(Assembler.assemble("SET", "[0x8181]", "0x553e"));
+		
 		mem.addAll(Assembler.assemble("SET", "[0x8000]", "0x449"));
 		mem.addAll(Assembler.assemble("SET", "[0x8001]", "0x241"));
 		mem.addAll(Assembler.assemble("SET", "[0x8002]", "0x94e"));
@@ -23,6 +26,8 @@ public class DCPULauncher {
 		mem.addAll(Assembler.assemble("SET", "[0x8046]", "0x6045"));
 		mem.addAll(Assembler.assemble("SET", "[0x8047]", "0x753"));
 		mem.addAll(Assembler.assemble("SET", "[0x8048]", "0xf054"));
+		
+		mem.addAll(Assembler.assemble("SET", "[0x8150]", "0xf000"));
 		cpu = new DCPU(mem);
 	}
 	
@@ -30,7 +35,7 @@ public class DCPULauncher {
         JFrame frame = new JFrame("DCPU-16");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
-        Monitor monitor = new Monitor();
+        Monitor monitor = new Monitor(cpu);
         monitor.repaint();
         frame.add(monitor);
                
@@ -84,6 +89,12 @@ public class DCPULauncher {
         while (cpu.running) {
         	cpu.cycle();
         	
+        	// Rebuild the fonts!
+        	for (int i = 0x8180; i < 0x8280; i += 2) {
+        		monitor.buildFontCharacter((i - 0x8180) / 2, cpu.memory[i].value, cpu.memory[i+1].value);
+        	}
+        	
+        	// Display stuff.
         	for (int i = 0x8000; i < 0x8180; i++) {
         		char character = (char)(cpu.memory[i].value & 127);
         		Color bgColor = Monitor.convertColor(cpu.memory[i].value >> 8);
