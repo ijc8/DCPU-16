@@ -3,6 +3,8 @@ package net.ian.dcpu;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,8 +12,14 @@ import javax.swing.*;
 
 import net.ian.dcpu.DCPU.Register;
 
-public class DCPULauncher {
+public class DCPULauncher implements ActionListener {
 	DCPU cpu;
+	Monitor monitor;
+	
+	JLabel[][] registers;
+    Cell special[];
+	JLabel[][] specialLabels;
+	JLabel instructionLabel[];
 
 	public DCPULauncher() {
 		List<Integer> mem = new ArrayList<Integer>();
@@ -31,13 +39,18 @@ public class DCPULauncher {
 		cpu = new DCPU(mem);
 	}
 	
-	public void launch() {	
+	public void init() {	
         JFrame frame = new JFrame("DCPU-16");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
-        Monitor monitor = new Monitor(cpu);
+        monitor = new Monitor(cpu);
         monitor.repaint();
-        frame.add(monitor);
+        frame.add(monitor, BorderLayout.NORTH);
+        
+        JButton runButton = new JButton("Run");
+        runButton.setActionCommand("run");
+        runButton.addActionListener(this);
+        frame.add(runButton, BorderLayout.CENTER);
                
         JPanel panel = new JPanel(new GridLayout(0, 4));
         panel.add(new JLabel("Registers"));
@@ -46,7 +59,7 @@ public class DCPULauncher {
         panel.add(new JLabel("Dec"));
         
         // 3 for Bin, Hex, and Dec
-        JLabel registers[][] = new JLabel[Register.values().length][];
+        registers = new JLabel[Register.values().length][];
         for (Register r : Register.values()) {
         	registers[r.ordinal()] = new JLabel[3];
         	panel.add(new JLabel(r.toString() + ": "));
@@ -57,8 +70,11 @@ public class DCPULauncher {
         }
         
         String specialNames[] = {"SP", "PC", "O"};
-        Cell special[] = {cpu.SP, cpu.PC, cpu.O};
-        JLabel specialLabels[][] = new JLabel[specialNames.length][];
+        special = new Cell[3];
+        special[0] = cpu.SP;
+        special[1] = cpu.PC;
+        special[2] = cpu.O;
+        specialLabels = new JLabel[specialNames.length][];
 
         for (int i = 0; i < specialNames.length; i++) {
         	specialLabels[i] = new JLabel[3];
@@ -70,13 +86,13 @@ public class DCPULauncher {
         }
         
         panel.add(new JLabel("Instruction:"));
-        JLabel instructionLabel[] = new JLabel[3];
+        instructionLabel = new JLabel[3];
         for (int i = 0; i < 3; i++) {
         	instructionLabel[i] = new JLabel();
         	panel.add(instructionLabel[i]);
         }
         
-        frame.getContentPane().add(panel, BorderLayout.SOUTH);        
+        frame.add(panel, BorderLayout.SOUTH);        
  
         // Display the window.
         frame.pack();
@@ -84,7 +100,15 @@ public class DCPULauncher {
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
-        
+	}
+	
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if (e.getActionCommand().equals("run"))
+			run();
+	}
+	
+	public void run() {
         cpu.running = true;
         while (cpu.running) {
         	cpu.cycle();
@@ -127,7 +151,6 @@ public class DCPULauncher {
 	
 	public static void main(String[] args) {
 		DCPULauncher launcher = new DCPULauncher();
-		launcher.launch();
+		launcher.init();
 	}
-
 }
