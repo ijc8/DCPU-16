@@ -48,10 +48,19 @@ public class DCPULauncher implements ActionListener {
         monitor.repaint();
         frame.add(monitor, BorderLayout.NORTH);
         
+        JPanel buttonBox = new JPanel(new GridLayout(1, 0));
+        
         JButton runButton = new JButton("Run");
         runButton.setActionCommand("run");
         runButton.addActionListener(this);
-        frame.add(runButton, BorderLayout.CENTER);
+        buttonBox.add(runButton);
+        
+        JButton stopButton = new JButton("Stop");
+        stopButton.setActionCommand("stop");
+        stopButton.addActionListener(this);
+        buttonBox.add(stopButton);
+        
+        frame.add(buttonBox, BorderLayout.CENTER);
                
         JPanel panel = new JPanel(new GridLayout(0, 4));
         panel.add(new JLabel("Registers"));
@@ -105,8 +114,11 @@ public class DCPULauncher implements ActionListener {
 	
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if (e.getActionCommand().equals("run"))
+		String command = e.getActionCommand();
+		if (command.equals("run"))
 			run();
+		else if (command.equals("stop"))
+			cpu.running = false;
 	}
 	
 	public void run() {
