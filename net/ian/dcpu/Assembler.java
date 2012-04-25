@@ -5,9 +5,10 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Assembler {
-	public static final String[] basic = { "SET", "ADD", "SUB", "MUL", "DIV", "MOD", "SHL", "SHR", "AND", "BOR", "XOR", "IFE", "IFN", "IFG", "IFB" };
-	public static final String[] special = { "EXIT", "JSR" };
+	public static final String[] basicOps = { "SET", "ADD", "SUB", "MUL", "DIV", "MOD", "SHL", "SHR", "AND", "BOR", "XOR", "IFE", "IFN", "IFG", "IFB" };
+	public static final String[] specialOps = { "EXIT", "JSR" };
 	public static final String[] registers;
+	public static final String[] special = { "SP", "PC", "O" };
 	
 	static {
 		DCPU.Register regs[] = DCPU.Register.values();
@@ -19,7 +20,7 @@ public class Assembler {
 	// This here is a poor man's assembler.
 	public static List<Integer> assemble(String sOp, String sArg1, String sArg2) {
 		boolean isBasic = (sArg2 != null);
-		int op = Arrays.asList(isBasic ? basic : special).indexOf(sOp) + 1;
+		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp) + 1;
 		int a, b = -1;
 		int[] argsA = handleArgument(sArg1);
 		
@@ -77,6 +78,12 @@ public class Assembler {
 		int index = Arrays.asList(registers).indexOf(arg);
 		if (index != -1)
 			return single(index);
+		
+		if ((index = Arrays.asList(special).indexOf(arg)) != -1) {
+			System.out.println("HEY LOOK " + arg);
+			System.out.println("ALSO THIS " + Integer.toHexString(index + 0x1b));
+			return single(index + 0x1b);
+		}
 		
 		int n = parseInt(arg);
 		if (n != -1) {

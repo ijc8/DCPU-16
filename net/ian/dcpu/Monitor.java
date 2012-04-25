@@ -71,7 +71,7 @@ public class Monitor extends Canvas {
 	public void buildFontCharacter(int i, int word1, int word2) {
 		BufferedImage fontChar = font[i];
 		int word = (word1 << 16) | word2;
-		System.out.println("1: " + word1 + " 2: " + word2 + " word: " + word);
+
 		for (int col = 0; col < 4; col++) {
 			for (int row = 0; row < 8; row++) {
 				int color = ((word >> (col * 8 + row)) & 1) == 1 ? Color.WHITE.getRGB() : Color.BLACK.getRGB();

@@ -226,24 +226,24 @@ public class DCPU {
 			rawA = instruction >> 4 & 0x3f;
 			rawB = instruction >> 10 & 0x3f;
 		}
-		
-		//System.out.println(Integer.toBinaryString(instruction));
-		//System.out.printf("opcode: %s\n", Integer.toBinaryString(opcode));
-		//System.out.printf("argument A: %s; argument B: %s\n", Integer.toBinaryString(rawA), rawB == -1 ? null : Integer.toBinaryString(rawB));
-		
+			
 		System.out.print("A: ");
 		Cell a = handleArgument(rawA), b = null;
 		if (rawB != -1) {
 			System.out.print("B: ");
 			b = handleArgument(rawB);
 		}
-				
+		
+		// With this, when PC is read, it's off by one, so "set pc, pc" is a no-op,
+		// when it seems like it should be an infinite loop. As of 4/25/2012, both
+		// 0x10co.de and dcpu.ru act like this, too.
+		PC.value++;
+
 		if (b != null)
 			processBasic(opcode, a, b);
 		else
 			processSpecial(opcode, a);
-
-		PC.value++;
+		
 		instructionCount++;
 	}
 }

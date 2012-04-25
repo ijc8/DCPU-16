@@ -36,6 +36,7 @@ public class DCPULauncher implements ActionListener {
 		mem.addAll(Assembler.assemble("SET", "[0x8048]", "0xf054"));
 		
 		mem.addAll(Assembler.assemble("SET", "[0x8150]", "0xf000"));
+		//mem.addAll(Assembler.assemble("SET", "PC", "0"));
 		cpu = new DCPU(mem);
 	}
 	
