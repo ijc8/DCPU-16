@@ -2,6 +2,7 @@ package net.ian.dcpu;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -44,9 +45,18 @@ public class DCPULauncher implements ActionListener {
         JFrame frame = new JFrame("DCPU-16");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
+        frame.setContentPane(new Box(BoxLayout.X_AXIS));
+        
+        JPanel output = new JPanel(new BorderLayout()); 
+        
+        JTextArea codeEntry = new JTextArea(0, 40);
+        codeEntry.setFont(new Font("Monospaced", Font.BOLD, 16));
+        JScrollPane codeScroll = new JScrollPane(codeEntry);
+        frame.add(codeScroll);
+
         monitor = new Monitor(cpu);
         monitor.repaint();
-        frame.add(monitor, BorderLayout.NORTH);
+        output.add(monitor, BorderLayout.NORTH);        
         
         JPanel buttonBox = new JPanel(new GridLayout(1, 0));
         
@@ -60,7 +70,7 @@ public class DCPULauncher implements ActionListener {
         stopButton.addActionListener(this);
         buttonBox.add(stopButton);
         
-        frame.add(buttonBox, BorderLayout.CENTER);
+        output.add(buttonBox, BorderLayout.CENTER);
                
         JPanel panel = new JPanel(new GridLayout(0, 4));
         panel.add(new JLabel("Registers"));
@@ -102,7 +112,9 @@ public class DCPULauncher implements ActionListener {
         	panel.add(instructionLabel[i]);
         }
         
-        frame.add(panel, BorderLayout.SOUTH);        
+        output.add(panel, BorderLayout.SOUTH);
+        
+        frame.add(output);
  
         // Display the window.
         frame.pack();
