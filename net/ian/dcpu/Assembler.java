@@ -3,6 +3,7 @@ package net.ian.dcpu;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
 
 public class Assembler {
 	public static final String[] basicOps = { "SET", "ADD", "SUB", "MUL", "DIV", "MOD", "SHL", "SHR", "AND", "BOR", "XOR", "IFE", "IFN", "IFG", "IFB" };
@@ -17,18 +18,36 @@ public class Assembler {
 			registers[r.ordinal()] = r.toString();
 	}
 	
-	// This here is a poor man's assembler.
+	public static List<Integer> assemble(String code) {
+		ArrayList<Integer> instructions = new ArrayList<Integer>();
+		String[] lines = code.split("\n");
+		for (String line : lines) {
+			if (line.startsWith(";"))
+				continue;
+			String[] tokens = line.split(",?\\s+");
+			if (tokens.length < 2)
+				continue;
+			String op = tokens[0];
+			String arg1 = tokens[1];
+			String arg2 = null;
+			if (tokens.length > 2)
+				arg2 = tokens[2];
+			instructions.addAll(assemble(op, arg1, arg2));
+		}
+		return instructions;
+	}
+	
 	public static List<Integer> assemble(String sOp, String sArg1, String sArg2) {
 		boolean isBasic = (sArg2 != null);
-		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp) + 1;
+		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp.toUpperCase()) + 1;
 		int a, b = -1;
-		int[] argsA = handleArgument(sArg1);
-		
-		a = argsA[0];	
+		int[] argsA = handleArgument(sArg1.toUpperCase());
+		System.out.println(sArg1.toUpperCase());		
+		a = argsA[0];
 			
 		int[] argsB = null;
 		if (isBasic) {
-			argsB = handleArgument(sArg2);
+			argsB = handleArgument(sArg2.toUpperCase());
 			b = argsB[0];
 		}
 		
@@ -63,7 +82,7 @@ public class Assembler {
 		} catch (NumberFormatException _) {
 			// Whelp, it wasn't a decimal number.
 		}
-		if (s.startsWith("0x")) {
+		if (s.toLowerCase().startsWith("0x")) {
 			try {
 				int n = Integer.parseInt(s.substring(2), 16);
 				return n;
@@ -79,11 +98,8 @@ public class Assembler {
 		if (index != -1)
 			return single(index);
 		
-		if ((index = Arrays.asList(special).indexOf(arg)) != -1) {
-			System.out.println("HEY LOOK " + arg);
-			System.out.println("ALSO THIS " + Integer.toHexString(index + 0x1b));
+		if ((index = Arrays.asList(special).indexOf(arg)) != -1)
 			return single(index + 0x1b);
-		}
 		
 		int n = parseInt(arg);
 		if (n != -1) {

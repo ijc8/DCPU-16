@@ -32,8 +32,14 @@ public class DCPU {
 		this(integersToInts(mem));
 	}
 	
+	public void setMemory(List<Integer> listMem) {
+		int[] mem = integersToInts(listMem);
+		for (int i = 0; i < mem.length; i++)
+			memory[i].value = mem[i];
+	}
+	
 	// This is here because Java wants constructor calls to be the first statement in another constructor (see above).
-	private static int[] integersToInts (List<Integer> mem) {
+	private static int[] integersToInts(List<Integer> mem) {
 		Integer[] integers = mem.toArray(new Integer[0]);
 		int[] ints = new int[integers.length];
 		for (int i = 0; i < ints.length; i++)

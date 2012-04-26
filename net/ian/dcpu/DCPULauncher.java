@@ -17,6 +17,8 @@ public class DCPULauncher implements ActionListener {
 	DCPU cpu;
 	Monitor monitor;
 	
+	JTextArea codeEntry;
+	
 	JLabel[][] registers;
     Cell special[];
 	JLabel[][] specialLabels;
@@ -49,13 +51,12 @@ public class DCPULauncher implements ActionListener {
         
         JPanel output = new JPanel(new BorderLayout()); 
         
-        JTextArea codeEntry = new JTextArea(0, 40);
+        codeEntry = new JTextArea(0, 40);
         codeEntry.setFont(new Font("Monospaced", Font.BOLD, 16));
         JScrollPane codeScroll = new JScrollPane(codeEntry);
         frame.add(codeScroll);
 
         monitor = new Monitor(cpu);
-        monitor.repaint();
         output.add(monitor, BorderLayout.NORTH);        
         
         JPanel buttonBox = new JPanel(new GridLayout(1, 0));
@@ -127,9 +128,11 @@ public class DCPULauncher implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
-		if (command.equals("run"))
+		if (command.equals("run")) {
+			cpu.setMemory(Assembler.assemble(codeEntry.getText()));
+			cpu.PC.value = 0;
 			run();
-		else if (command.equals("stop"))
+		} else if (command.equals("stop"))
 			cpu.running = false;
 	}
 	
