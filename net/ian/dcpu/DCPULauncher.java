@@ -26,7 +26,7 @@ public class DCPULauncher implements ActionListener {
 
 	public DCPULauncher() {
 		List<Integer> mem = new ArrayList<Integer>();
-		mem.addAll(Assembler.assemble("SET", "[0x8180]", "0x3e55"));
+		/*mem.addAll(Assembler.assemble("SET", "[0x8180]", "0x3e55"));
 		mem.addAll(Assembler.assemble("SET", "[0x8181]", "0x553e"));
 		
 		mem.addAll(Assembler.assemble("SET", "[0x8000]", "0x449"));
@@ -39,7 +39,7 @@ public class DCPULauncher implements ActionListener {
 		mem.addAll(Assembler.assemble("SET", "[0x8048]", "0xf054"));
 		
 		mem.addAll(Assembler.assemble("SET", "[0x8150]", "0xf000"));
-		//mem.addAll(Assembler.assemble("SET", "PC", "0"));
+		mem.addAll(Assembler.assemble("SET", "PC", "0"));*/
 		cpu = new DCPU(mem);
 	}
 	

@@ -38,7 +38,7 @@ public class Assembler {
 	
 	public static List<Integer> assemble(String sOp, String sArg1, String sArg2) {
 		boolean isBasic = (sArg2 != null);
-		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp.toUpperCase()) + 1;
+		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp.toUpperCase()) + (isBasic ? 1 : 0);
 		int a, b = -1;
 		int[] argsA = handleArgument(sArg1.toUpperCase());
 
@@ -54,7 +54,7 @@ public class Assembler {
 		words.add(compile(op, a, b));
 		if (argsA.length > 1)
 			words.add(argsA[1]);
-		if (argsB.length > 1)
+		if (argsB != null && argsB.length > 1)
 			words.add(argsB[1]);
 				
 		return words;
@@ -124,9 +124,11 @@ public class Assembler {
 	public static int compile(int op, int arg1, int arg2) {
 		boolean isBasic = (arg2 != -1);
 		int opLength = isBasic ? 4 : 6;
-		String sOp = String.format("%0" + opLength + "d", Integer.parseInt(Integer.toBinaryString(op)));
+		
+		String sOp = String.format("%0" + opLength + "d", Integer.parseInt(Integer.toBinaryString(op))) + (isBasic ? "" : "0000");
 		String sArg1 = String.format("%06d", Integer.parseInt(Integer.toBinaryString(arg1)));
-		String sArg2 = isBasic ? String.format("%06d", Integer.parseInt(Integer.toBinaryString(arg2))) : "0000";
+		String sArg2 = isBasic ? String.format("%06d", Integer.parseInt(Integer.toBinaryString(arg2))) : "";
+		
 		return Integer.parseInt(sArg2 + sArg1 + sOp, 2);
 	}
 	

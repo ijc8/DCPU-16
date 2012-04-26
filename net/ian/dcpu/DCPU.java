@@ -210,6 +210,7 @@ public class DCPU {
 		case 0x1: // JSR pushes the address of the next instruction to the stack, sets PC to a
 			debug("JSR");
 			memory[--SP.value].value = a.value;
+			PC.value = a.value;
 			break;
 		default:
 			debug("INVALID SPECIAL OPERATION");
@@ -222,8 +223,9 @@ public class DCPU {
 		int instruction = memory[PC.value].value;
 		int opcode;
 		int rawA, rawB = -1;
-		if ((instruction & 0x3) == 0) {
+		if ((instruction & 0xf) == 0) {
 			// Non-basic opcode
+			instruction >>= 4; // Lower 4 bits are unset.
 			opcode = instruction & 0x3f;
 			rawA = instruction >> 6 & 0x3f;
 		} else {
