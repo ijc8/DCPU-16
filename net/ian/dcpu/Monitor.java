@@ -15,9 +15,17 @@ import javax.imageio.ImageIO;
 public class Monitor extends Canvas {
 	private static final long serialVersionUID = 1L;
 	
-	public static final int WIDTH = 128;
-	public static final int HEIGHT = 96;
-	public static final int SCALE = 5;
+	public static final int COLUMNS = 32;
+	public static final int ROWS = 12;
+	
+	public static final int CHAR_WIDTH = 4;
+	public static final int CHAR_HEIGHT = 8;
+	
+	public static final int BORDER = 12;
+	public static final int SCALE = 4;
+	
+	public static final int WIDTH = COLUMNS * CHAR_WIDTH * SCALE + BORDER * SCALE * 2;
+	public static final int HEIGHT = ROWS * CHAR_HEIGHT * SCALE + BORDER * SCALE * 2;
 	
 	public BufferedImage font[];
 	public MonitorCell cells[];
@@ -36,9 +44,9 @@ public class Monitor extends Canvas {
 	}
 	
 	public Monitor(DCPU cpu) {
-        setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
-        setMinimumSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
-        setMaximumSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
+        setPreferredSize(new Dimension(WIDTH, HEIGHT));
+        setMinimumSize(new Dimension(WIDTH, HEIGHT));
+        setMaximumSize(new Dimension(WIDTH, HEIGHT));
         
         cells = new MonitorCell[32 * 12];
         for (int i = 0; i < 32 * 12; i++)
@@ -134,11 +142,12 @@ public class Monitor extends Canvas {
 
 	public void paint(Graphics gr) {
 		Graphics2D g = (Graphics2D)gr; 
-		g.setColor(Color.BLACK);
-		for (int x = 0; x < WIDTH / 4; x++) {
-			for (int y = 0; y < HEIGHT / 8; y++) {
+		g.setColor(Color.decode("0x5555ff"));
+		g.fillRect(0, 0, WIDTH, HEIGHT);
+		for (int x = 0; x < COLUMNS; x++) {
+			for (int y = 0; y < ROWS; y++) {
 				MonitorCell cell = cells[y * 32 + x];
-				g.drawImage(replaceColor(font[cell.character], cell.fgColor, cell.bgColor), scaler, x * 4 * SCALE, y * 8 * SCALE);
+				g.drawImage(replaceColor(font[cell.character], cell.fgColor, cell.bgColor), scaler, x * 4 * SCALE + BORDER * SCALE, y * 8 * SCALE + BORDER * SCALE);
 			}
 		}
 	}

@@ -3,7 +3,6 @@ package net.ian.dcpu;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
 
 public class Assembler {
 	public static final String[] basicOps = { "SET", "ADD", "SUB", "MUL", "DIV", "MOD", "SHL", "SHR", "AND", "BOR", "XOR", "IFE", "IFN", "IFG", "IFB" };
@@ -42,7 +41,7 @@ public class Assembler {
 		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp.toUpperCase()) + 1;
 		int a, b = -1;
 		int[] argsA = handleArgument(sArg1.toUpperCase());
-		System.out.println(sArg1.toUpperCase());		
+
 		a = argsA[0];
 			
 		int[] argsB = null;
