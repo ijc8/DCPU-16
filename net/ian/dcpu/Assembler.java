@@ -2,14 +2,21 @@ package net.ian.dcpu;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Assembler {
 	public static final String[] basicOps = { "SET", "ADD", "SUB", "MUL", "DIV", "MOD", "SHL", "SHR", "AND", "BOR", "XOR", "IFE", "IFN", "IFG", "IFB" };
 	public static final String[] specialOps = { "EXIT", "JSR" };
 	public static final String[] registers;
 	public static final String[] special = { "SP", "PC", "O" };
+
+	public ArrayList<Integer> instructions;
 	
+	public Map<String, Integer> labels;
+	public Map<Integer, Instruction> fixes;
+		
 	static {
 		DCPU.Register regs[] = DCPU.Register.values();
 		registers = new String[regs.length];
@@ -17,60 +24,120 @@ public class Assembler {
 			registers[r.ordinal()] = r.toString();
 	}
 	
-	public static List<Integer> assemble(String code) {
-		ArrayList<Integer> instructions = new ArrayList<Integer>();
-		String[] lines = code.split("\n");
+	private class Instruction {
+		public String op, argA, argB;
+		
+		// I miss tuples.
+		public Instruction(String op, String argA, String argB) {
+			this.op = op;
+			this.argA = argA;
+			this.argB = argB;
+		}
+	}
+	
+	public List<Integer> assemble(String code) {
+		instructions = new ArrayList<Integer>();
+		labels = new HashMap<String, Integer>();
+		fixes = new HashMap<Integer, Instruction>();
+		
+		String[] lines = code.trim().split("\\s*\n\\s*");
 		for (String line : lines) {
+			// Comments
 			if (line.startsWith(";"))
 				continue;
+			
 			String[] tokens = line.split(",?\\s+");
+			
+			// Labels
+			if (line.startsWith(":")) {
+				String label = tokens[0].substring(1).toUpperCase();
+				if (labels.containsKey(label))
+					System.out.println("ERROR: Label " + label + " defined twice!");
+				else
+					labels.put(label, instructions.size());
+				tokens = Arrays.copyOfRange(tokens, 1, tokens.length);
+			}
+			
 			if (tokens.length < 2)
 				continue;
+			
 			String op = tokens[0];
 			String arg1 = tokens[1];
 			String arg2 = null;
 			if (tokens.length > 2)
 				arg2 = tokens[2];
-			instructions.addAll(assemble(op, arg1, arg2));
+			List<Integer> assembled = assemble(op, arg1, arg2);
+			if (assembled == null)
+				instructions.add(-1);
+			else
+				instructions.addAll(assemble(op, arg1, arg2));
 		}
+		
+		insertLabels();
+		
+		System.out.println(labels);
 		return instructions;
 	}
 	
-	public static List<Integer> assemble(String sOp, String sArg1, String sArg2) {
+	// This inserts labels in parts of the program where they were used before they existed,
+	// via the "fixes" map.
+	private void insertLabels() {
+		for (Map.Entry<Integer, Instruction> entry : fixes.entrySet()) {
+			System.out.printf("Hello. %d, %s\n", entry.getKey(), entry.getValue());
+			Instruction ins = entry.getValue();
+			List<Integer> eval = assemble(ins.op, ins.argA, ins.argB);
+			if (eval != null) {
+				int index = entry.getKey();
+				instructions.remove(index);
+				instructions.addAll(index, eval);
+			} else
+				System.out.printf("Error: True assembly error (in insertLabels): %s %s %s\n", ins.op, ins.argA, ins.argB);
+		}
+	}
+
+	public List<Integer> assemble(String sOp, String sArg1, String sArg2) {
 		boolean isBasic = (sArg2 != null);
 		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp.toUpperCase()) + (isBasic ? 1 : 0);
 		int a, b = -1;
-		int[] argsA = handleArgument(sArg1.toUpperCase());
-
-		a = argsA[0];
+		List<Integer> argsA = handleArgument(sArg1.toUpperCase());
+		
+		if (argsA == null) {
+			fixes.put(instructions.size(), new Instruction(sOp, sArg1, sArg2));
+			return null;
+		}
+		
+		a = argsA.get(0);
 			
-		int[] argsB = null;
+		List<Integer> argsB = null;
 		if (isBasic) {
 			argsB = handleArgument(sArg2.toUpperCase());
-			b = argsB[0];
+			if (argsB == null) {
+				fixes.put(instructions.size(), new Instruction(sOp, sArg1, sArg2));
+				return null;
+			}
+			b = argsB.get(0);
 		}
 		
 		ArrayList<Integer> words = new ArrayList<Integer>();
 		words.add(compile(op, a, b));
-		if (argsA.length > 1)
-			words.add(argsA[1]);
-		if (argsB != null && argsB.length > 1)
-			words.add(argsB[1]);
+		words.addAll(argsA.subList(1, argsA.size()));
+		if (argsB != null)
+			words.addAll(argsB.subList(1, argsB.size()));
 				
 		return words;
 	}
 	
-	public static List<Integer> assemble(String op, String arg) {
+	public List<Integer> assemble(String op, String arg) {
 		return assemble(op, arg, null);
 	}
 	
-	private static int[] single(int n) {
-		int[] s = {n};
+	private static List<Integer> single(int n) {
+		List<Integer> s = Arrays.asList(n);
 		return s;
 	}
 	
-	private static int[] pair(int a, int b) {
-		int[] p = {a, b};
+	private static List<Integer> pair(int a, int b) {
+		List<Integer> p = Arrays.asList(a, b);
 		return p;
 	}
 	
@@ -92,13 +159,20 @@ public class Assembler {
 		return -1;
 	}
 	 
-	private static int[] handleArgument(String arg) {
+	private List<Integer> handleArgument(String arg) {
 		int index = Arrays.asList(registers).indexOf(arg);
 		if (index != -1)
 			return single(index);
 		
 		if ((index = Arrays.asList(special).indexOf(arg)) != -1)
 			return single(index + 0x1b);
+		
+		if (labels.containsKey(arg)) {
+			int loc = labels.get(arg);
+			if (loc < 31)
+				return single(loc + 0x20);
+			return pair(0x1f, loc);
+		}
 		
 		int n = parseInt(arg);
 		if (n != -1) {
@@ -113,10 +187,13 @@ public class Assembler {
 			arg = arg.substring(1, arg.length() - 1);
 			if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
 				return single(index + 0x8);
-			if ((n = parseInt(arg)) != -1) {
+			if ((n = parseInt(arg)) != -1)
 				return pair(0x1e, n);
-			}
+			if (labels.containsKey(arg))
+				return pair(0x1e, labels.get(arg));
 		}
+		
+		System.out.println("Error: Invalid Argument (assembly): " + arg + " (maybe a label?)");
 		return null;
 	}
 	

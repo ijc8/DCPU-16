@@ -6,8 +6,6 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.swing.*;
 
@@ -17,6 +15,8 @@ public class DCPULauncher implements ActionListener {
 	DCPU cpu;
 	Monitor monitor;
 	
+	Assembler assembler;
+	
 	JTextArea codeEntry;
 	
 	JLabel[][] registers;
@@ -25,22 +25,8 @@ public class DCPULauncher implements ActionListener {
 	JLabel instructionLabel[];
 
 	public DCPULauncher() {
-		List<Integer> mem = new ArrayList<Integer>();
-		/*mem.addAll(Assembler.assemble("SET", "[0x8180]", "0x3e55"));
-		mem.addAll(Assembler.assemble("SET", "[0x8181]", "0x553e"));
-		
-		mem.addAll(Assembler.assemble("SET", "[0x8000]", "0x449"));
-		mem.addAll(Assembler.assemble("SET", "[0x8001]", "0x241"));
-		mem.addAll(Assembler.assemble("SET", "[0x8002]", "0x94e"));
-		
-		mem.addAll(Assembler.assemble("SET", "[0x8045]", "0xf554"));
-		mem.addAll(Assembler.assemble("SET", "[0x8046]", "0x6045"));
-		mem.addAll(Assembler.assemble("SET", "[0x8047]", "0x753"));
-		mem.addAll(Assembler.assemble("SET", "[0x8048]", "0xf054"));
-		
-		mem.addAll(Assembler.assemble("SET", "[0x8150]", "0xf000"));
-		mem.addAll(Assembler.assemble("SET", "PC", "0"));*/
-		cpu = new DCPU(mem);
+		cpu = new DCPU();
+		assembler = new Assembler();
 	}
 	
 	public void init() {	
@@ -129,7 +115,7 @@ public class DCPULauncher implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
 		if (command.equals("run")) {
-			cpu.setMemory(Assembler.assemble(codeEntry.getText()));
+			cpu.setMemory(assembler.assemble(codeEntry.getText()));
 			cpu.PC.value = 0;
 			run();
 		} else if (command.equals("stop"))
