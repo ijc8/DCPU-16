@@ -143,6 +143,9 @@ public class DCPULauncher implements ActionListener {
         		cell.fgColor = fgColor;
         		cell.bgColor = bgColor;
         	}
+        	
+        	// Set border color.
+        	monitor.borderColor = Monitor.convertColor(cpu.memory[0x8280].value);
         	monitor.repaint();
         	
         	for (Register r : Register.values())

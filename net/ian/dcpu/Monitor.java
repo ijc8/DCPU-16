@@ -30,6 +30,8 @@ public class Monitor extends Canvas {
 	public BufferedImage font[];
 	public MonitorCell cells[];
 	
+	public Color borderColor = Color.BLACK;
+	
 	private AffineTransformOp scaler;
 	
 	public static class MonitorCell {
@@ -142,7 +144,7 @@ public class Monitor extends Canvas {
 
 	public void paint(Graphics gr) {
 		Graphics2D g = (Graphics2D)gr; 
-		g.setColor(Color.decode("0x5555ff"));
+		g.setColor(borderColor);
 		g.fillRect(0, 0, WIDTH, HEIGHT);
 		for (int x = 0; x < COLUMNS; x++) {
 			for (int y = 0; y < ROWS; y++) {
