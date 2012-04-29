@@ -25,7 +25,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
     Cell special[];
 	JLabel[][] specialLabels;
 	JLabel instructionLabel[];
-
+	
 	public DCPULauncher() {
 		super();
 		cpu = new DCPU();
@@ -57,6 +57,11 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
         runButton.setActionCommand("run");
         runButton.addActionListener(this);
         buttonBox.add(runButton);
+        
+        JButton stepButton = new JButton("Step");
+        stepButton.setActionCommand("step");
+        stepButton.addActionListener(this);
+        buttonBox.add(stepButton);
         
         JButton stopButton = new JButton("Stop");
         stopButton.setActionCommand("stop");
@@ -124,6 +129,14 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 			cpu.setMemory(assembler.assemble(codeEntry.getText()));
 			cpu.PC.value = 0;
 			new Thread(this).start();
+		} else if (command.equals("step")) {
+			if (!cpu.running) {
+				cpu.setMemory(assembler.assemble(codeEntry.getText()));
+				cpu.PC.value = 0;
+				cpu.running = true;
+			}
+			cycle();
+			updateMonitor();
 		} else if (command.equals("stop"))
 			cpu.running = false;
 	}
@@ -131,23 +144,25 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	public void run() {
         cpu.running = true;
         while (cpu.running) {
-        	cpu.cycle();
+        	cycle();
         	
         	if ((cpu.instructionCount % 60) == 0)
-	        	updateMonitor();
-        	
-        	for (Register r : Register.values())
-        		setLabels(registers[r.ordinal()], cpu.getRegister(r).value);
-        	
-        	for (int i = 0; i < special.length; i++)
-        		setLabels(specialLabels[i], special[i].value);
-        	
-        	setLabels(instructionLabel, cpu.instructionCount);
-        	
-        	//System.out.println("Next cycle...");
+            	updateMonitor();
         }
         
         updateMonitor();
+	}
+	
+	public void cycle() {
+    	cpu.cycle();
+    	
+    	for (Register r : Register.values())
+    		setLabels(registers[r.ordinal()], cpu.getRegister(r).value);
+    	
+    	for (int i = 0; i < special.length; i++)
+    		setLabels(specialLabels[i], special[i].value);
+    	
+    	setLabels(instructionLabel, cpu.instructionCount);
 	}
 	
 	public void updateMonitor() {
