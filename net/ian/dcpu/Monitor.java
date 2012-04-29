@@ -67,7 +67,7 @@ public class Monitor extends Canvas {
 	
 	public void addNotify() {
 		super.addNotify();
-		createBufferStrategy(2);
+		createBufferStrategy(3);
 	}
 	
 	public static Color convertColor(int colorBits) {

@@ -46,7 +46,9 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
         JScrollPane codeScroll = new JScrollPane(codeEntry);
         frame.add(codeScroll);
 
+        Keyboard keyboard = new Keyboard(cpu);
         monitor = new Monitor(cpu);
+        monitor.addKeyListener(keyboard);
         output.add(monitor, BorderLayout.NORTH);        
         
         JPanel buttonBox = new JPanel(new GridLayout(1, 0));
