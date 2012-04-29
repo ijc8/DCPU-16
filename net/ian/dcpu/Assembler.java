@@ -24,6 +24,20 @@ public class Assembler {
 			registers[r.ordinal()] = r.toString();
 	}
 	
+	private class Argument {
+		public List<Integer> code;
+		public String label = null;
+		
+		public Argument(Integer... args) {
+			code = Arrays.asList(args);
+		}
+		
+		public Argument(String label, Integer... args) {
+			code = Arrays.asList(args);
+			this.label = label;
+		}
+	}
+	
 	public List<Integer> assemble(String code) {
 		instructions = new ArrayList<Integer>();
 		labels = new HashMap<String, Integer>();
@@ -116,34 +130,31 @@ public class Assembler {
 		if (isBasic)
 			sArg2 = sArg2.toUpperCase();
 		
-		List<Integer> argsA = handleArgument(sArg1);
-		instructionCount += argsA.size() - 1;
+		Argument argA = handleArgument(sArg1);
+		List<Integer> codeA = argA.code;
+		instructionCount += codeA.size() - 1;
 		
-		if (argsA.size() > 1 && argsA.get(1) == -1) {
-			if (argsA.get(0) == 0x1e)
-				sArg1 = sArg1.substring(1, sArg1.length() - 1);
-			fixes.put(instructionCount, sArg1);
-		}
+		if (argA.label != null)
+			fixes.put(instructionCount, argA.label);
 		
-		a = argsA.get(0);
+		a = codeA.get(0);
 			
-		List<Integer> argsB = null;
+		Argument argB = null;
+		List<Integer> codeB = null;
 		if (isBasic) {
-			argsB = handleArgument(sArg2);
-			instructionCount += argsB.size() - 1;
-			if (argsB.size() > 1 && argsB.get(1) == -1) {
-				if (argsB.get(0) == 0x1e)
-					sArg2 = sArg2.substring(1, sArg2.length() - 1);
-				fixes.put(instructionCount, sArg2);
-			}
-			b = argsB.get(0);
+			argB = handleArgument(sArg2);
+			codeB = argB.code;
+			instructionCount += codeB.size() - 1;
+			if (argB.label != null)
+				fixes.put(instructionCount, argB.label);
+			b = codeB.get(0);
 		}
 		
 		ArrayList<Integer> words = new ArrayList<Integer>();
 		words.add(compile(op, a, b));
-		words.addAll(argsA.subList(1, argsA.size()));
-		if (argsB != null)
-			words.addAll(argsB.subList(1, argsB.size()));
+		words.addAll(codeA.subList(1, codeA.size()));
+		if (argB != null)
+			words.addAll(codeB.subList(1, codeB.size()));
 				
 		return words;
 	}
@@ -152,28 +163,28 @@ public class Assembler {
 		return assemble(op, arg, null);
 	}
 	 
-	private List<Integer> handleArgument(String arg) {
+	private Argument handleArgument(String arg) {
 		int index = Arrays.asList(registers).indexOf(arg);
 		if (index != -1)
-			return single(index);
+			return new Argument(index);
 		
 		if ((index = Arrays.asList(special).indexOf(arg)) != -1)
-			return single(index + 0x1b);
+			return new Argument(index + 0x1b);
 		
 		if ((index = handleStack(arg)) != -1)
-			return single(index);
+			return new Argument(index);
 		
 		if (labels.containsKey(arg)) {
 			int loc = labels.get(arg);
 			// No more inline labels. :(
-			return pair(0x1f, loc);
+			return new Argument(0x1f, loc);
 		}
 		
 		int n = parseInt(arg);
 		if (n != -1) {
 			if (n < 31)
-				return single(n + 0x20);
-			return pair(0x1f, n);
+				return new Argument(n + 0x20);
+			return new Argument(0x1f, n);
 		}
 		
 		if (arg.startsWith("[")) {
@@ -183,28 +194,31 @@ public class Assembler {
 			}
 			arg = arg.substring(1, arg.length() - 1);
 			if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
-				return single(index + 0x8);
+				return new Argument(index + 0x8);
 			if ((n = parseInt(arg)) != -1)
-				return pair(0x1e, n);
+				return new Argument(0x1e, n);
 			if (labels.containsKey(arg))
-				return pair(0x1e, labels.get(arg));
+				return new Argument(0x1e, labels.get(arg));
+			if (arg.contains("+")) {
+				String split[] = arg.split("\\s*\\+\\s*", 2);
+				String other;
+				for (int i = 0; i < 2; i++) {
+					if ((index = Arrays.asList(registers).indexOf(split[i])) != -1) {
+						other = split[1 - i];
+						if ((n = parseInt(other)) != -1)
+							return new Argument(index + 0x10, n);
+						return new Argument(other, index + 0x10, -1);
+					}
+				}
+				
+			}
+			
 			//System.out.println("Error: Invalid Argument (assembly): [" + arg + "] (maybe a label?)");
-			return pair(0x1e, -1);
+			return new Argument(arg, 0x1e, -1);
 		}
 		
 		//System.out.println("Error: Invalid Argument (assembly): " + arg + " (maybe a label?)");
-		return pair(0x1f, -1);
-	}
-	
-	
-	private static List<Integer> single(int n) {
-		List<Integer> s = Arrays.asList(n);
-		return s;
-	}
-	
-	private static List<Integer> pair(int a, int b) {
-		List<Integer> p = Arrays.asList(a, b);
-		return p;
+		return new Argument(arg, 0x1f, -1);
 	}
 	
 	private static int parseInt(String s) {

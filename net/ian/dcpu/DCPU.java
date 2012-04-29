@@ -60,42 +60,42 @@ public class DCPU {
 	}
 	
 	private Cell handleArgument(int code) {
-		//System.out.printf("0x%s: ", Integer.toHexString(code));
+		System.out.printf("0x%s: ", Integer.toHexString(code));
 		if (code >= 0x0 && code <= 0x7) {
-			//debug(Register.values()[code]);
+			debug(Register.values()[code]);
 			return register[code];
 		} else if (code >= 0x8 && code <= 0xf) {
-			//System.out.printf("[%s]\n", Register.values()[code - 0x8]);
+			System.out.printf("[%s]\n", Register.values()[code - 0x8]);
 			return memory[register[code - 0x8].value];
 		} else if (code >= 0x10 && code <= 0x17) {
-			//System.out.printf("[next word + %s]\n", Register.values()[code - 0x10]);
+			System.out.printf("[next word + %s]\n", Register.values()[code - 0x10]);
 			return memory[memory[++PC.value].value + register[code - 0x10].value];
 		} else if (code == 0x18) {
-			//debug("POP");
+			debug("POP");
 			return memory[SP.value++];
 		} else if (code == 0x19) {
-			//debug("PEEK");
+			debug("PEEK");
 			return memory[SP.value];
 		} else if (code == 0x1a) {
-			//debug("PUSH");
+			debug("PUSH");
 			return memory[--SP.value];
 		} else if (code == 0x1b) {
-			//debug("SP");
+			debug("SP");
 			return SP;
 		} else if (code == 0x1c) {
-			//debug("PC");
+			debug("PC");
 			return PC;
 		} else if (code == 0x1d) {
-			//debug("O");
+			debug("O");
 			return O;
 		} else if (code == 0x1e) {
-			//debug("[next word]");
+			debug("[next word]");
 			return memory[memory[++PC.value].value];
 		} else if (code == 0x1f) {
-			//debug("next word (literal)");
+			debug("next word (literal)");
 			return new Cell(memory[++PC.value].value);
 		}
-		//debug("literal: " + (code - 0x20));
+		debug("literal: " + (code - 0x20));
 		return new Cell(code - 0x20);
 	}
 	
@@ -123,26 +123,26 @@ public class DCPU {
 		int b = cellB.value;
 		switch (opcode) {
 		case 0x1: // SET a to b
-			//debug("SET");
+			debug("SET");
 			a = b;
 			break;
 		case 0x2: // ADD b to a
-			//debug("ADD");
+			debug("ADD");
 			O.value = (a += b) > 0xffff ? 1 : 0;
 			a &= 0xffff;
 			break;
 		case 0x3: // SUBTRACT b from a
-			//debug("SUB");
+			debug("SUB");
 			O.value = (a -= b) < 0 ? 0xffff : 0;
 			a = a < 0 ? 0 : a;
 			break;
 		case 0x4: // MUL multiplies a by b
-			//debug("MUL");
+			debug("MUL");
 			O.value = (a *= b) >> 16 & 0xffff;
 			a &= 0xffff;
 			break;
 		case 0x5: // DIV divides a by b
-			//debug("DIV");
+			debug("DIV");
 			if (b == 0) {
 				a = 0;
 				O.value = 0;
@@ -152,48 +152,48 @@ public class DCPU {
 			}
 			break;
 		case 0x6: // MOD (sets a to a % b)
-			//debug("MOD");
+			debug("MOD");
 			a = (b == 0) ? 0 : a % b;
 			break;
 		case 0x7: // SHL shifts a left by b
-			//debug("SHL");
+			debug("SHL");
 			O.value = a << b >> 16 & 0xffff;
 			a = a << b & 0xffff;
 			break;
 		case 0x8: // SHR shifts a right by b
-			//debug("SHR");
+			debug("SHR");
 			O.value = a << 16 >>b & 0xffff;
 			a >>= b;
 			break;
 		case 0x9: // AND sets a to a & b
-			//debug("AND");
+			debug("AND");
 			a &= b;
 			break;
 		case 0xa: // BOR sets a to a | b
-			//debug("BOR");
+			debug("BOR");
 			a |= b;
 			break;
 		case 0xb: // XOR sets a to a ^ b
-			//debug("XOR");
+			debug("XOR");
 			a ^= b;
 			break;
 		case 0xc: // IFE performs next instruction if a == b
-			//debug("IFE");
+			debug("IFE");
 			if (a != b)
 				skipInstruction();
 			break;
 		case 0xd: // IFN performs next instruction if a != b
-			//debug("IFN");
+			debug("IFN");
 			if (a == b)
 				skipInstruction();
 			break;
 		case 0xe: // IFG performs next instruction if a > b
-			//debug("IFG");
+			debug("IFG");
 			if (a <= b)
 				skipInstruction();
 			break;
 		case 0xf: // IFB performs next instructions if (a & b) != 0
-			//debug("IFB");
+			debug("IFB");
 			if ((a & b) == 0)
 				skipInstruction();
 			break;
@@ -211,12 +211,12 @@ public class DCPU {
 			running = false;
 			break;
 		case 0x1: // JSR pushes the address of the next instruction to the stack, sets PC to a
-			//debug("JSR");
+			debug("JSR");
 			memory[--SP.value].value = PC.value;
 			PC.value = a.value;
 			break;
 		default:
-			debug("INVALID SPECIAL OPERATION");
+			debug("INVALID SPECIAL OPERATION: " + opcode);
 		}
 	}
 	
@@ -238,11 +238,13 @@ public class DCPU {
 			rawB = instruction >> 10 & 0x3f;
 		}
 			
-		//System.out.print("A: ");
+		System.out.print("A: ");
 		Cell a = handleArgument(rawA), b = null;
+		System.out.println(" = " + a.value);
 		if (rawB != -1) {
-			//System.out.print("B: ");
+			System.out.print("B: ");
 			b = handleArgument(rawB);
+			System.out.println(" = " + b.value);
 		}
 		
 		PC.value++;
