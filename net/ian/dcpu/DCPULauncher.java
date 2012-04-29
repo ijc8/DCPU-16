@@ -11,7 +11,9 @@ import javax.swing.*;
 
 import net.ian.dcpu.DCPU.Register;
 
-public class DCPULauncher implements ActionListener {
+public class DCPULauncher extends JPanel implements ActionListener {
+	private static final long serialVersionUID = 1L;
+	
 	DCPU cpu;
 	Monitor monitor;
 	
@@ -25,6 +27,7 @@ public class DCPULauncher implements ActionListener {
 	JLabel instructionLabel[];
 
 	public DCPULauncher() {
+		super();
 		cpu = new DCPU();
 		assembler = new Assembler();
 	}
@@ -33,7 +36,8 @@ public class DCPULauncher implements ActionListener {
         JFrame frame = new JFrame("DCPU-16");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
-        frame.setContentPane(new Box(BoxLayout.X_AXIS));
+        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+        frame.setContentPane(this);
         
         JPanel output = new JPanel(new BorderLayout()); 
         
