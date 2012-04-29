@@ -15,7 +15,7 @@ public class Assembler {
 	public ArrayList<Integer> instructions;
 	
 	public Map<String, Integer> labels;
-	public Map<Integer, Instruction> fixes;
+	public Map<Integer, String> fixes;
 		
 	static {
 		DCPU.Register regs[] = DCPU.Register.values();
@@ -24,26 +24,20 @@ public class Assembler {
 			registers[r.ordinal()] = r.toString();
 	}
 	
-	private class Instruction {
-		public String op, argA, argB;
-		
-		// I miss tuples.
-		public Instruction(String op, String argA, String argB) {
-			this.op = op;
-			this.argA = argA;
-			this.argB = argB;
-		}
-	}
-	
 	public List<Integer> assemble(String code) {
 		instructions = new ArrayList<Integer>();
 		labels = new HashMap<String, Integer>();
-		fixes = new HashMap<Integer, Instruction>();
+		fixes = new HashMap<Integer, String>();
 		
 		String[] lines = code.trim().split("\\s*\n\\s*");
-		for (String line : lines) {
+		for (String line : lines) {		
 			// Comments
-			if (line.startsWith(";"))
+			String[] c = line.split(";");
+			//System.out.printf("%s: %s\n", line, Arrays.toString(c));
+			if (c.length == 0)
+				continue;
+			line = c[0];
+			if (line.equals(""))
 				continue;
 			
 			String[] tokens = line.split(",?\\s+");
@@ -61,6 +55,11 @@ public class Assembler {
 			if (tokens.length < 2)
 				continue;
 			
+			if (tokens[0].toUpperCase().equals("DAT")) {
+				instructions.addAll(parseDat(tokens));
+				continue;
+			}
+			
 			String op = tokens[0];
 			String arg1 = tokens[1];
 			String arg2 = null;
@@ -70,50 +69,72 @@ public class Assembler {
 			if (assembled == null)
 				instructions.add(-1);
 			else
-				instructions.addAll(assemble(op, arg1, arg2));
+				instructions.addAll(assembled);
 		}
 		
+		System.out.println(labels);
 		insertLabels();
 		
-		System.out.println(labels);
+		//for (int instruction : instructions) {
+		//	System.out.println("0x" + Integer.toHexString(instruction));
+		//}
+		
 		return instructions;
 	}
 	
+	private List<Integer> parseDat(String[] tokens) {
+		List<Integer> data = new ArrayList<Integer>();
+		for (String token : Arrays.copyOfRange(tokens, 1, tokens.length))
+			data.add(parseInt(token));
+		return data;
+	}
+
 	// This inserts labels in parts of the program where they were used before they existed,
 	// via the "fixes" map.
 	private void insertLabels() {
-		for (Map.Entry<Integer, Instruction> entry : fixes.entrySet()) {
-			System.out.printf("Hello. %d, %s\n", entry.getKey(), entry.getValue());
-			Instruction ins = entry.getValue();
-			List<Integer> eval = assemble(ins.op, ins.argA, ins.argB);
-			if (eval != null) {
-				int index = entry.getKey();
-				instructions.remove(index);
-				instructions.addAll(index, eval);
+		for (Map.Entry<Integer, String> entry : fixes.entrySet()) {
+			int index = entry.getKey();
+			String label = entry.getValue();
+			System.out.printf("Fixing: %s at %d\n", label, index);
+			Integer loc;
+			if ((loc = labels.get(label)) != null) {
+				instructions.set(index, loc);
 			} else
-				System.out.printf("Error: True assembly error (in insertLabels): %s %s %s\n", ins.op, ins.argA, ins.argB);
+				System.out.printf("Error: True assembly error (in insertLabels): %s at %d\n", label, index);
 		}
 	}
-
+	
 	public List<Integer> assemble(String sOp, String sArg1, String sArg2) {
 		boolean isBasic = (sArg2 != null);
 		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp.toUpperCase()) + (isBasic ? 1 : 0);
+		if (op == -1)
+			System.out.println("Broken OP! " + sOp);
 		int a, b = -1;
-		List<Integer> argsA = handleArgument(sArg1.toUpperCase());
+		int instructionCount = instructions.size();
 		
-		if (argsA == null) {
-			fixes.put(instructions.size(), new Instruction(sOp, sArg1, sArg2));
-			return null;
+		sArg1 = sArg1.toUpperCase();
+		if (isBasic)
+			sArg2 = sArg2.toUpperCase();
+		
+		List<Integer> argsA = handleArgument(sArg1);
+		instructionCount += argsA.size() - 1;
+		
+		if (argsA.size() > 1 && argsA.get(1) == -1) {
+			if (argsA.get(0) == 0x1e)
+				sArg1 = sArg1.substring(1, sArg1.length() - 1);
+			fixes.put(instructionCount, sArg1);
 		}
 		
 		a = argsA.get(0);
 			
 		List<Integer> argsB = null;
 		if (isBasic) {
-			argsB = handleArgument(sArg2.toUpperCase());
-			if (argsB == null) {
-				fixes.put(instructions.size(), new Instruction(sOp, sArg1, sArg2));
-				return null;
+			argsB = handleArgument(sArg2);
+			instructionCount += argsB.size() - 1;
+			if (argsB.size() > 1 && argsB.get(1) == -1) {
+				if (argsB.get(0) == 0x1e)
+					sArg2 = sArg2.substring(1, sArg2.length() - 1);
+				fixes.put(instructionCount, sArg2);
 			}
 			b = argsB.get(0);
 		}
@@ -130,6 +151,51 @@ public class Assembler {
 	public List<Integer> assemble(String op, String arg) {
 		return assemble(op, arg, null);
 	}
+	 
+	private List<Integer> handleArgument(String arg) {
+		int index = Arrays.asList(registers).indexOf(arg);
+		if (index != -1)
+			return single(index);
+		
+		if ((index = Arrays.asList(special).indexOf(arg)) != -1)
+			return single(index + 0x1b);
+		
+		if ((index = handleStack(arg)) != -1)
+			return single(index);
+		
+		if (labels.containsKey(arg)) {
+			int loc = labels.get(arg);
+			// No more inline labels. :(
+			return pair(0x1f, loc);
+		}
+		
+		int n = parseInt(arg);
+		if (n != -1) {
+			if (n < 31)
+				return single(n + 0x20);
+			return pair(0x1f, n);
+		}
+		
+		if (arg.startsWith("[")) {
+			if (!arg.endsWith("]")) {
+				System.out.println("Error: No closing square bracket.");
+				return null;
+			}
+			arg = arg.substring(1, arg.length() - 1);
+			if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
+				return single(index + 0x8);
+			if ((n = parseInt(arg)) != -1)
+				return pair(0x1e, n);
+			if (labels.containsKey(arg))
+				return pair(0x1e, labels.get(arg));
+			//System.out.println("Error: Invalid Argument (assembly): [" + arg + "] (maybe a label?)");
+			return pair(0x1e, -1);
+		}
+		
+		//System.out.println("Error: Invalid Argument (assembly): " + arg + " (maybe a label?)");
+		return pair(0x1f, -1);
+	}
+	
 	
 	private static List<Integer> single(int n) {
 		List<Integer> s = Arrays.asList(n);
@@ -158,43 +224,15 @@ public class Assembler {
 		}
 		return -1;
 	}
-	 
-	private List<Integer> handleArgument(String arg) {
-		int index = Arrays.asList(registers).indexOf(arg);
-		if (index != -1)
-			return single(index);
-		
-		if ((index = Arrays.asList(special).indexOf(arg)) != -1)
-			return single(index + 0x1b);
-		
-		if (labels.containsKey(arg)) {
-			int loc = labels.get(arg);
-			if (loc < 31)
-				return single(loc + 0x20);
-			return pair(0x1f, loc);
-		}
-		
-		int n = parseInt(arg);
-		if (n != -1) {
-			if (n < 31)
-				return single(n + 0x20);
-			return pair(0x1f, n);
-		}
-		
-		if (arg.startsWith("[")) {
-			if (!arg.endsWith("]"))
-				return single(-1);
-			arg = arg.substring(1, arg.length() - 1);
-			if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
-				return single(index + 0x8);
-			if ((n = parseInt(arg)) != -1)
-				return pair(0x1e, n);
-			if (labels.containsKey(arg))
-				return pair(0x1e, labels.get(arg));
-		}
-		
-		System.out.println("Error: Invalid Argument (assembly): " + arg + " (maybe a label?)");
-		return null;
+	
+	private static int handleStack(String s) {
+		if (s.equals("POP"))
+			return 0x18;
+		if (s.equals("PEEK"))
+			return 0x19;
+		if (s.equals("PUSH"))
+			return 0x1a;
+		return -1;
 	}
 	
 	// Changes arguments into machine code. This is nice because arguments are 6 bits.
