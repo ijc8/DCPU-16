@@ -11,7 +11,7 @@ import javax.swing.*;
 
 import net.ian.dcpu.DCPU.Register;
 
-public class DCPULauncher extends JPanel implements ActionListener {
+public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	private static final long serialVersionUID = 1L;
 	
 	DCPU cpu;
@@ -113,7 +113,7 @@ public class DCPULauncher extends JPanel implements ActionListener {
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
-	}
+    }
 	
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -121,7 +121,7 @@ public class DCPULauncher extends JPanel implements ActionListener {
 		if (command.equals("run")) {
 			cpu.setMemory(assembler.assemble(codeEntry.getText()));
 			cpu.PC.value = 0;
-			run();
+			new Thread(this).start();
 		} else if (command.equals("stop"))
 			cpu.running = false;
 	}
