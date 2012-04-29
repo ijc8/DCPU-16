@@ -101,14 +101,17 @@ public class DCPU {
 	
 	private void skipInstruction() {
 		// This skips to the end of the next instruction - used in IF operations.
-		int instruction = memory[++PC.value].value;
+		int instruction = memory[PC.value++].value;
 		int a, b = -1;
-		if ((instruction & 0x3) == 0) {
-			a = instruction >> 6 & 0x3f;
+		if ((instruction & 0xf) == 0) {
+			// Non-basic opcode
+			a = instruction >> 10 & 0x3f;
 		} else {
-			a = instruction >> 4 & 0x3;
-			b = instruction >> 8 & 0x3;
+			// Basic opcode
+			a = instruction >> 4 & 0x3f;
+			b = instruction >> 10 & 0x3f;
 		}
+		
 		if ((a >= 0x10 && a <= 0x17) || a == 0x1e || a == 0x1f)
 			PC.value++;
 		if ((b >= 0x10 && b <= 0x17) || b == 0x1e || b == 0x1f)
