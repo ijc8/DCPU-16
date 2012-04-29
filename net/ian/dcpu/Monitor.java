@@ -65,6 +65,11 @@ public class Monitor extends Canvas {
         scaler = new AffineTransformOp(scale, null);
 	}
 	
+	public void addNotify() {
+		super.addNotify();
+		createBufferStrategy(2);
+	}
+	
 	public static Color convertColor(int colorBits) {
 		boolean h = (colorBits >> 3 & 1) == 1;
 
@@ -82,10 +87,10 @@ public class Monitor extends Canvas {
 		BufferedImage fontChar = font[i];
 		int word = (word1 << 16) | word2;
 
-		for (int col = 0; col < 4; col++) {
+		for (int col = 3; col >= 0; col--) {
 			for (int row = 0; row < 8; row++) {
 				int color = ((word >> (col * 8 + row)) & 1) == 1 ? Color.WHITE.getRGB() : Color.BLACK.getRGB();
-				fontChar.setRGB(col, row, color);
+				fontChar.setRGB(3 - col, row, color);
 			}
 		}
 	}
@@ -141,6 +146,13 @@ public class Monitor extends Canvas {
 		}
 		return img2;
 	}
+	
+	public void render() {
+		Graphics g = getBufferStrategy().getDrawGraphics();
+		paint(g);
+		g.dispose();
+		getBufferStrategy().show();
+	}
 
 	public void paint(Graphics gr) {
 		Graphics2D g = (Graphics2D)gr; 
@@ -149,7 +161,11 @@ public class Monitor extends Canvas {
 		for (int x = 0; x < COLUMNS; x++) {
 			for (int y = 0; y < ROWS; y++) {
 				MonitorCell cell = cells[y * 32 + x];
-				g.drawImage(replaceColor(font[cell.character], cell.fgColor, cell.bgColor), scaler, x * 4 * SCALE + BORDER * SCALE, y * 8 * SCALE + BORDER * SCALE);
+				if (cell.fgColor.equals(cell.bgColor)) {
+					g.setColor(cell.bgColor);
+					g.fillRect(x * 4 * SCALE + BORDER * SCALE, y * 8 * SCALE + BORDER * SCALE, 4 * SCALE, 8 * SCALE);
+				} else
+					g.drawImage(replaceColor(font[cell.character], cell.fgColor, cell.bgColor), scaler, x * 4 * SCALE + BORDER * SCALE, y * 8 * SCALE + BORDER * SCALE);
 			}
 		}
 	}

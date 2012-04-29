@@ -127,26 +127,28 @@ public class DCPULauncher implements ActionListener {
         while (cpu.running) {
         	cpu.cycle();
         	
-        	// Rebuild the fonts!
-        	for (int i = 0x8180; i < 0x8280; i += 2) {
-        		monitor.buildFontCharacter((i - 0x8180) / 2, cpu.memory[i].value, cpu.memory[i+1].value);
+        	if ((cpu.instructionCount % 60) == 0) {
+	        	// Rebuild the fonts!
+	        	for (int i = 0x8180; i < 0x8280; i += 2) {
+	        		monitor.buildFontCharacter((i - 0x8180) / 2, cpu.memory[i].value, cpu.memory[i+1].value);
+	        	}
+	        	
+	        	// Display stuff.
+	        	for (int i = 0x8000; i < 0x8180; i++) {
+	        		char character = (char)(cpu.memory[i].value & 127);
+	        		Color bgColor = Monitor.convertColor(cpu.memory[i].value >> 8);
+	        		Color fgColor = Monitor.convertColor(cpu.memory[i].value >> 12);
+	        		Monitor.MonitorCell cell = monitor.cells[i - 0x8000];
+	        		
+	        		cell.character = character;
+	        		cell.fgColor = fgColor;
+	        		cell.bgColor = bgColor;
+	        	}
+	        	
+	        	// Set border color.
+	        	monitor.borderColor = Monitor.convertColor(cpu.memory[0x8280].value);
+	        	monitor.render();
         	}
-        	
-        	// Display stuff.
-        	for (int i = 0x8000; i < 0x8180; i++) {
-        		char character = (char)(cpu.memory[i].value & 127);
-        		Color bgColor = Monitor.convertColor(cpu.memory[i].value >> 8);
-        		Color fgColor = Monitor.convertColor(cpu.memory[i].value >> 12);
-        		Monitor.MonitorCell cell = monitor.cells[i - 0x8000];
-        		
-        		cell.character = character;
-        		cell.fgColor = fgColor;
-        		cell.bgColor = bgColor;
-        	}
-        	
-        	// Set border color.
-        	monitor.borderColor = Monitor.convertColor(cpu.memory[0x8280].value);
-        	monitor.repaint();
         	
         	for (Register r : Register.values())
         		setLabels(registers[r.ordinal()], cpu.getRegister(r).value);
@@ -156,7 +158,7 @@ public class DCPULauncher implements ActionListener {
         	
         	setLabels(instructionLabel, cpu.instructionCount);
         	
-        	System.out.println("Next cycle...");
+        	//System.out.println("Next cycle...");
         }
 	}
 	
