@@ -137,6 +137,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 			}
 			cycle();
 			updateMonitor();
+			monitor.repaint();
 		} else if (command.equals("stop"))
 			cpu.running = false;
 	}
@@ -151,6 +152,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
         }
         
         updateMonitor();
+        monitor.repaint();
 	}
 	
 	public void cycle() {
