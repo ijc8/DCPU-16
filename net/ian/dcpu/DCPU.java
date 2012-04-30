@@ -9,6 +9,8 @@ public class DCPU {
 	public boolean running;
 	public int instructionCount = 0;
 	
+	public static final boolean debug = false;
+	
 	public enum Register { A, B, C, X, Y, Z, I, J };
 	
 	public DCPU() {
@@ -48,7 +50,18 @@ public class DCPU {
 	}
 	
 	private void debug(Object o) {
-		System.out.println(o);
+		if (debug)
+			System.out.print(o);
+	}
+	
+	private void debugln(Object o) {
+		if (debug)
+			System.out.println(o);
+	}
+	
+	private void debugf(String s, Object... o) {
+		if (debug)
+			System.out.printf(s, o);
 	}
 
 	public Cell getRegister(Register r) {
@@ -60,15 +73,15 @@ public class DCPU {
 	}
 	
 	private Cell handleArgument(int code) {
-		System.out.printf("0x%s: ", Integer.toHexString(code));
+		debugf("0x%s: ", Integer.toHexString(code));
 		if (code >= 0x0 && code <= 0x7) {
 			debug(Register.values()[code]);
 			return register[code];
 		} else if (code >= 0x8 && code <= 0xf) {
-			System.out.printf("[%s]\n", Register.values()[code - 0x8]);
+			debugf("[%s]", Register.values()[code - 0x8]);
 			return memory[register[code - 0x8].value];
 		} else if (code >= 0x10 && code <= 0x17) {
-			System.out.printf("[next word + %s]\n", Register.values()[code - 0x10]);
+			debugf("[next word + %s]", Register.values()[code - 0x10]);
 			return memory[memory[++PC.value].value + register[code - 0x10].value];
 		} else if (code == 0x18) {
 			debug("POP");
@@ -123,26 +136,26 @@ public class DCPU {
 		int b = cellB.value;
 		switch (opcode) {
 		case 0x1: // SET a to b
-			debug("SET");
+			debugln("SET");
 			a = b;
 			break;
 		case 0x2: // ADD b to a
-			debug("ADD");
+			debugln("ADD");
 			O.value = (a += b) > 0xffff ? 1 : 0;
 			a &= 0xffff;
 			break;
 		case 0x3: // SUBTRACT b from a
-			debug("SUB");
+			debugln("SUB");
 			O.value = (a -= b) < 0 ? 0xffff : 0;
 			a = a < 0 ? 0 : a;
 			break;
 		case 0x4: // MUL multiplies a by b
-			debug("MUL");
+			debugln("MUL");
 			O.value = (a *= b) >> 16 & 0xffff;
 			a &= 0xffff;
 			break;
 		case 0x5: // DIV divides a by b
-			debug("DIV");
+			debugln("DIV");
 			if (b == 0) {
 				a = 0;
 				O.value = 0;
@@ -152,53 +165,53 @@ public class DCPU {
 			}
 			break;
 		case 0x6: // MOD (sets a to a % b)
-			debug("MOD");
+			debugln("MOD");
 			a = (b == 0) ? 0 : a % b;
 			break;
 		case 0x7: // SHL shifts a left by b
-			debug("SHL");
+			debugln("SHL");
 			O.value = a << b >> 16 & 0xffff;
 			a = a << b & 0xffff;
 			break;
 		case 0x8: // SHR shifts a right by b
-			debug("SHR");
+			debugln("SHR");
 			O.value = a << 16 >>b & 0xffff;
 			a >>= b;
 			break;
 		case 0x9: // AND sets a to a & b
-			debug("AND");
+			debugln("AND");
 			a &= b;
 			break;
 		case 0xa: // BOR sets a to a | b
-			debug("BOR");
+			debugln("BOR");
 			a |= b;
 			break;
 		case 0xb: // XOR sets a to a ^ b
-			debug("XOR");
+			debugln("XOR");
 			a ^= b;
 			break;
 		case 0xc: // IFE performs next instruction if a == b
-			debug("IFE");
+			debugln("IFE");
 			if (a != b)
 				skipInstruction();
 			break;
 		case 0xd: // IFN performs next instruction if a != b
-			debug("IFN");
+			debugln("IFN");
 			if (a == b)
 				skipInstruction();
 			break;
 		case 0xe: // IFG performs next instruction if a > b
-			debug("IFG");
+			debugln("IFG");
 			if (a <= b)
 				skipInstruction();
 			break;
 		case 0xf: // IFB performs next instructions if (a & b) != 0
-			debug("IFB");
+			debugln("IFB");
 			if ((a & b) == 0)
 				skipInstruction();
 			break;
 		default:
-			debug("INVALID BASIC OPERATION");
+			debugln("INVALID BASIC OPERATION");
 		}
 		cellA.value = a;
 		cellB.value = b;
@@ -207,11 +220,11 @@ public class DCPU {
 	private void processSpecial(int opcode, Cell a) {
 		switch (opcode) {
 		case 0x0: // EXIT custom code, makes the processor stop.
-			debug("EXIT (custom)");
+			debugln("EXIT");
 			running = false;
 			break;
 		case 0x1: // JSR pushes the address of the next instruction to the stack, sets PC to a
-			debug("JSR");
+			debugln("JSR");
 			memory[--SP.value].value = PC.value;
 			PC.value = a.value;
 			break;
@@ -238,13 +251,13 @@ public class DCPU {
 			rawB = instruction >> 10 & 0x3f;
 		}
 			
-		System.out.print("A: ");
+		debug("A: ");
 		Cell a = handleArgument(rawA), b = null;
-		System.out.println(" = " + a.value);
+		debugln(" = " + a.value);
 		if (rawB != -1) {
-			System.out.print("B: ");
+			debug("B: ");
 			b = handleArgument(rawB);
-			System.out.println(" = " + b.value);
+			debugln(" = " + b.value);
 		}
 		
 		PC.value++;
