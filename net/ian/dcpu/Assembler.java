@@ -44,27 +44,32 @@ public class Assembler {
 		fixes = new HashMap<Integer, String>();
 		
 		String[] lines = code.trim().split("\\s*\n\\s*");
-		for (String line : lines) {		
+		for (String line : lines) {
 			// Comments
 			String[] c = line.split(";");
-			//System.out.printf("%s: %s\n", line, Arrays.toString(c));
+
 			if (c.length == 0)
 				continue;
 			line = c[0];
-			if (line.equals(""))
+			if (line.isEmpty())
 				continue;
-			
-			String[] tokens = line.split(",?\\s+");
 			
 			// Labels
 			if (line.startsWith(":")) {
-				String label = tokens[0].substring(1).toUpperCase();
+				String[] tmp = line.split("\\s+", 2);
+				String label = tmp[0].substring(1).toUpperCase();
 				if (labels.containsKey(label))
 					System.out.println("ERROR: Label " + label + " defined twice!");
 				else
 					labels.put(label, instructions.size());
-				tokens = Arrays.copyOfRange(tokens, 1, tokens.length);
+				if (tmp.length < 2)
+					continue;
+				line = tmp[1];
+				if (line.isEmpty())
+					continue;
 			}
+			
+			String[] tokens = line.split("\\s*(,|\\s)\\s*");
 			
 			if (tokens.length < 2)
 				continue;
@@ -119,10 +124,11 @@ public class Assembler {
 	}
 	
 	public List<Integer> assemble(String sOp, String sArg1, String sArg2) {
+		sOp = sOp.toUpperCase();
 		boolean isBasic = (sArg2 != null);
-		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp.toUpperCase()) + (isBasic ? 1 : 0);
+		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp) + (isBasic ? 1 : 0);
 		if (op == -1)
-			System.out.println("Broken OP! " + sOp);
+			System.out.println("Broken OP! \"" + sOp + "\" isBasic = " + isBasic);
 		int a, b = -1;
 		int instructionCount = instructions.size();
 		
