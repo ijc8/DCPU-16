@@ -6,6 +6,8 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.*;
 
@@ -25,6 +27,8 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
     Cell special[];
 	JLabel[][] specialLabels;
 	JLabel instructionLabel[];
+
+	private boolean started;
 	
 	public DCPULauncher() {
 		super();
@@ -49,7 +53,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
         Keyboard keyboard = new Keyboard(cpu);
         monitor = new Monitor(cpu);
         monitor.addKeyListener(keyboard);
-        output.add(monitor, BorderLayout.NORTH);        
+        output.add(monitor, BorderLayout.NORTH);
         
         JPanel buttonBox = new JPanel(new GridLayout(1, 0));
         
@@ -127,12 +131,15 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 		String command = e.getActionCommand();
 		if (command.equals("run")) {
 			cpu.setMemory(assembler.assemble(codeEntry.getText()));
+			reverseLabels();
 			cpu.PC.value = 0;
 			new Thread(this).start();
 		} else if (command.equals("step")) {
-			if (!cpu.running) {
+			if (!started) {
 				cpu.setMemory(assembler.assemble(codeEntry.getText()));
+				reverseLabels();
 				cpu.PC.value = 0;
+				started = true;
 				cpu.running = true;
 			}
 			cycle();
@@ -142,7 +149,16 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 			cpu.running = false;
 	}
 	
+	private void reverseLabels() {
+		Map<String, Integer> labels = assembler.labels;
+		Map<Integer, String> reversed = new HashMap<Integer, String>();
+		for (Map.Entry<String, Integer> pair : labels.entrySet())
+			reversed.put(pair.getValue(), pair.getKey());
+		cpu.labels = reversed;
+	}
+	
 	public void run() {
+		started = true;
         cpu.running = true;
         while (cpu.running) {
         	cycle();

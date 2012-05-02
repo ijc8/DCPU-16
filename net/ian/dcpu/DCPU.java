@@ -1,6 +1,7 @@
 package net.ian.dcpu;
 
 import java.util.List;
+import java.util.Map;
 
 public class DCPU {
 	public Cell[] register;
@@ -10,6 +11,8 @@ public class DCPU {
 	public int instructionCount = 0;
 	
 	public static final boolean debug = false;
+	
+	public Map<Integer, String> labels;
 	
 	public enum Register { A, B, C, X, Y, Z, I, J };
 	
@@ -25,7 +28,7 @@ public class DCPU {
 		for (int i = 0; i < 0x10000; i++)
 			memory[i] = new Cell(i < mem.length ? mem[i] : 0);
 
-		SP = new Cell(0xffff);
+		SP = new Cell(0);
 		PC = new Cell(0);
 		O = new Cell(0);
 	}
@@ -82,7 +85,7 @@ public class DCPU {
 			return memory[register[code - 0x8].value];
 		} else if (code >= 0x10 && code <= 0x17) {
 			debugf("[next word + %s]", Register.values()[code - 0x10]);
-			return memory[memory[++PC.value].value + register[code - 0x10].value];
+			return memory[memory[PC.value++].value + register[code - 0x10].value];
 		} else if (code == 0x18) {
 			debug("POP");
 			return memory[SP.value++];
@@ -91,7 +94,8 @@ public class DCPU {
 			return memory[SP.value];
 		} else if (code == 0x1a) {
 			debug("PUSH");
-			return memory[--SP.value];
+			SP.value = (SP.value == 0) ? 0xffff : (SP.value - 1);
+			return memory[SP.value];
 		} else if (code == 0x1b) {
 			debug("SP");
 			return SP;
@@ -103,10 +107,10 @@ public class DCPU {
 			return O;
 		} else if (code == 0x1e) {
 			debug("[next word]");
-			return memory[memory[++PC.value].value];
+			return memory[memory[PC.value++].value];
 		} else if (code == 0x1f) {
 			debug("next word (literal)");
-			return new Cell(memory[++PC.value].value);
+			return new Cell(memory[PC.value++].value);
 		}
 		debug("literal: " + (code - 0x20));
 		return new Cell(code - 0x20);
@@ -175,7 +179,7 @@ public class DCPU {
 			break;
 		case 0x8: // SHR shifts a right by b
 			debugln("SHR");
-			O.value = a << 16 >>b & 0xffff;
+			O.value = a << 16 >> b & 0xffff;
 			a >>= b;
 			break;
 		case 0x9: // AND sets a to a & b
@@ -225,7 +229,8 @@ public class DCPU {
 			break;
 		case 0x1: // JSR pushes the address of the next instruction to the stack, sets PC to a
 			debugln("JSR");
-			memory[--SP.value].value = PC.value;
+			SP.value = (SP.value == 0) ? 0xffff : (SP.value - 1);
+			memory[SP.value].value = PC.value;
 			PC.value = a.value;
 			break;
 		default:
@@ -234,7 +239,9 @@ public class DCPU {
 	}
 	
 	public void cycle() {
-		//debug("Instruction #" + instructionCount);
+		if (debug && labels != null && labels.containsKey(PC.value)) {
+			System.out.println(labels.get(PC.value));
+		}
 		
 		int instruction = memory[PC.value].value;
 		int opcode;
@@ -250,7 +257,9 @@ public class DCPU {
 			rawA = instruction >> 4 & 0x3f;
 			rawB = instruction >> 10 & 0x3f;
 		}
-			
+		
+		PC.value++;
+		
 		debug("A: ");
 		Cell a = handleArgument(rawA), b = null;
 		debugln(" = " + a.value);
@@ -260,8 +269,6 @@ public class DCPU {
 			debugln(" = " + b.value);
 		}
 		
-		PC.value++;
-
 		if (b != null)
 			processBasic(opcode, a, b);
 		else

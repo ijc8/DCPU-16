@@ -94,10 +94,6 @@ public class Assembler {
 		System.out.println(labels);
 		insertLabels();
 		
-		//for (int instruction : instructions) {
-		//	System.out.println("0x" + Integer.toHexString(instruction));
-		//}
-		
 		return instructions;
 	}
 	
