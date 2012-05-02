@@ -238,6 +238,7 @@ public class DCPU {
 		}
 	}
 	
+	@SuppressWarnings("unused")
 	public void cycle() {
 		if (debug && labels != null && labels.containsKey(PC.value)) {
 			System.out.println(labels.get(PC.value));

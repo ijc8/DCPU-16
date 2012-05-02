@@ -178,7 +178,8 @@ public class Assembler {
 		
 		if (labels.containsKey(arg)) {
 			int loc = labels.get(arg);
-			// No more inline labels. :(
+			if (loc < 31)
+				return new Argument(loc + 0x20);
 			return new Argument(0x1f, loc);
 		}
 		
