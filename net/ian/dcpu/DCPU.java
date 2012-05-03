@@ -40,7 +40,7 @@ public class DCPU {
 	public void setMemory(List<Integer> listMem) {
 		int[] mem = integersToInts(listMem);
 		for (int i = 0; i < mem.length; i++)
-			memory[i].value = mem[i];
+			memory[i].value = (char)mem[i];
 	}
 	
 	// This is here because Java wants constructor calls to be the first statement in another constructor (see above).
@@ -71,7 +71,7 @@ public class DCPU {
 		return register[r.ordinal()];
 	}
 	
-	public void setRegister(Register r, int value) {
+	public void setRegister(Register r, char value) {
 		register[r.ordinal()].value = value;
 	}
 	
@@ -94,8 +94,8 @@ public class DCPU {
 			return memory[SP.value];
 		} else if (code == 0x1a) {
 			debug("PUSH");
-			SP.value = (SP.value == 0) ? 0xffff : (SP.value - 1);
-			return memory[SP.value];
+			//SP.value = (SP.value == 0) ? (char)(0xffff) : (SP.value - 1);
+			return memory[--SP.value];
 		} else if (code == 0x1b) {
 			debug("SP");
 			return SP;
@@ -138,6 +138,7 @@ public class DCPU {
 	private void processBasic(int opcode, Cell cellA, Cell cellB) {
 		int a = cellA.value;
 		int b = cellB.value;
+		int o = 0;
 		switch (opcode) {
 		case 0x1: // SET a to b
 			debugln("SET");
@@ -145,17 +146,17 @@ public class DCPU {
 			break;
 		case 0x2: // ADD b to a
 			debugln("ADD");
-			O.value = (a += b) > 0xffff ? 1 : 0;
+			o = (a += b) > 0xffff ? 1 : 0;
 			a &= 0xffff;
 			break;
 		case 0x3: // SUBTRACT b from a
 			debugln("SUB");
-			O.value = (a -= b) < 0 ? 0xffff : 0;
+			o = (a -= b) < 0 ? 0xffff : 0;
 			a = a < 0 ? 0 : a;
 			break;
 		case 0x4: // MUL multiplies a by b
 			debugln("MUL");
-			O.value = (a *= b) >> 16 & 0xffff;
+			o = (a *= b) >> 16 & 0xffff;
 			a &= 0xffff;
 			break;
 		case 0x5: // DIV divides a by b
@@ -164,7 +165,7 @@ public class DCPU {
 				a = 0;
 				O.value = 0;
 			} else {
-				O.value = ((a << 16) / b) & 0xffff;
+				O.value = (char)(((a << 16) / b) & 0xffff);
 				a /= b;
 			}
 			break;
@@ -174,12 +175,12 @@ public class DCPU {
 			break;
 		case 0x7: // SHL shifts a left by b
 			debugln("SHL");
-			O.value = a << b >> 16 & 0xffff;
+			O.value = (char)(a << b >> 16 & 0xffff);
 			a = a << b & 0xffff;
 			break;
 		case 0x8: // SHR shifts a right by b
 			debugln("SHR");
-			O.value = a << 16 >> b & 0xffff;
+			O.value = (char)(a << 16 >> b & 0xffff);
 			a >>= b;
 			break;
 		case 0x9: // AND sets a to a & b
@@ -217,8 +218,9 @@ public class DCPU {
 		default:
 			debugln("INVALID BASIC OPERATION");
 		}
-		cellA.value = a;
-		cellB.value = b;
+		cellA.value = (char)a;
+		cellB.value = (char)b;
+		O.value = (char)o;
 	}
 
 	private void processSpecial(int opcode, Cell a) {
@@ -229,8 +231,7 @@ public class DCPU {
 			break;
 		case 0x1: // JSR pushes the address of the next instruction to the stack, sets PC to a
 			debugln("JSR");
-			SP.value = (SP.value == 0) ? 0xffff : (SP.value - 1);
-			memory[SP.value].value = PC.value;
+			memory[--SP.value].value = PC.value;
 			PC.value = a.value;
 			break;
 		default:

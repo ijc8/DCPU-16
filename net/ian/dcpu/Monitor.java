@@ -117,8 +117,8 @@ public class Monitor extends Canvas {
 				for (int y = 0; y < font[i].getHeight(); y++) {
 					if (font[i].getRGB(x, y) == Color.WHITE.getRGB())
 						word |= 1 << ((3 - x) * 8 + y);
-					int word2 = word & 0xffff;
-					int word1 = word >> 16;
+					char word2 = (char)(word & 0xffff);
+					char word1 = (char)(word >> 16);
 					cpu.memory[0x8180 + (i * 2)].value = word1;
 					cpu.memory[0x8180 + (i * 2) + 1].value = word2;
 				}

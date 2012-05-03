@@ -1,12 +1,16 @@
 package net.ian.dcpu;
 
 public class Cell {
-	public int value;
+	public char value;
 	
 	public Cell() {}
 	
-	public Cell(int value) {
+	public Cell(char value) {
 		this.value = value;
+	}
+	
+	public Cell(int value) {
+		this((char)value);
 	}
 	
 	public String toString() {

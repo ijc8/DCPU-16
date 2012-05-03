@@ -12,8 +12,8 @@ public class Keyboard implements KeyListener {
 	
 	private void addKey(int key) {
 		int tmp = cpu.memory[0x9010].value - 0x9000 + 1;
-		cpu.memory[0x9010].value = ((tmp < 0 ? 0 : tmp) % 0xf) + 0x9000;
-		cpu.memory[cpu.memory[0x9010].value].value = key;
+		cpu.memory[0x9010].value = (char)(((tmp < 0 ? 0 : tmp) % 0xf) + 0x9000);
+		cpu.memory[cpu.memory[0x9010].value].value = (char)key;
 		System.out.println(key);
 	}
 	
