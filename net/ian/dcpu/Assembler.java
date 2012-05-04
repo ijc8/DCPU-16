@@ -75,7 +75,7 @@ public class Assembler {
 				continue;
 			
 			if (tokens[0].toUpperCase().equals("DAT")) {
-				instructions.addAll(parseDat(tokens));
+				instructions.addAll(parseDat(line, tokens));
 				continue;
 			}
 			
@@ -97,10 +97,58 @@ public class Assembler {
 		return instructions;
 	}
 	
-	private List<Integer> parseDat(String[] tokens) {
+	private List<Integer> parseDat(String line, String[] tokens) {
 		List<Integer> data = new ArrayList<Integer>();
-		for (String token : Arrays.copyOfRange(tokens, 1, tokens.length))
-			data.add(parseInt(token));
+		//for (String token : Arrays.copyOfRange(tokens, 1, tokens.length))
+		//	data.add(parseInt(token));
+		
+		line = line.trim();
+		line = line.substring(3); // Length of "DAT"
+		line = line.trim();
+		while (!line.isEmpty()) {
+			if (line.charAt(0) == ';')
+				break;
+			else if (line.charAt(0) == '"') {
+				// Handle string literals.
+				line = line.substring(1);
+				int i = 0;
+				while (true) {
+					if (line.charAt(i) == '\\') {
+						if (line.charAt(i+1) == 'n')
+							data.add((int)'\n');
+						else if (line.charAt(i+1) == 't')
+							data.add((int)'\t');
+						else if (line.charAt(i+1) == '"')
+							data.add((int)'"');
+						else if (line.charAt(i+1) == '0')
+							data.add((int)'\0');
+						else
+							data.add((int)line.charAt(i+1));
+						i += 2;
+						continue;
+					} else if (line.charAt(i) == '"')
+						break;
+					data.add((int)line.charAt(i));
+					i++;
+				}
+				line = line.substring(i+1);
+				System.out.println("\"" + line + "\"");
+			} else {
+				String[] split = line.split("\\s*(,|\\s)\\s*", 2);
+				System.out.println(Arrays.toString(split));
+				String num = split[0];
+				if (num.isEmpty()) {
+					if (split.length < 2)
+						break;
+					line = split[1];
+					continue;
+				}
+				data.add(parseInt(num));
+				line = line.substring(num.length());
+				System.out.println("\"" + line + "\"");
+			}
+			line = line.trim();
+		}
 		return data;
 	}
 
