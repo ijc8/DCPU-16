@@ -12,7 +12,7 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-public class Monitor extends Canvas {
+public class Monitor extends Canvas implements Hardware {
 	private static final long serialVersionUID = 1L;
 	
 	public static final int COLUMNS = 32;
@@ -168,5 +168,17 @@ public class Monitor extends Canvas {
 					g.drawImage(replaceColor(font[cell.character], cell.fgColor, cell.bgColor), scaler, x * 4 * SCALE + BORDER * SCALE, y * 8 * SCALE + BORDER * SCALE);
 			}
 		}
+	}
+
+	@Override
+	public void onSet(char location, char value) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onGet(char location, char value) {
+		// TODO Auto-generated method stub
+		
 	}
 }

@@ -13,6 +13,18 @@ public class Cell {
 		this((char)value);
 	}
 	
+	public void set(char value) {
+		this.value = value;
+	}
+	
+	public void set(int value) {
+		set((char)value);
+	}
+	
+	public char get() {
+		return value;
+	}
+	
 	public String toString() {
 		return Integer.toBinaryString(value);
 	}
