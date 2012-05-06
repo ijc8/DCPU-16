@@ -1,11 +1,12 @@
 package net.ian.dcpu;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class DCPU {
 	public Cell[] register;
-	public Cell[] memory;
+	public MemoryCell[] memory;
 	public Cell SP, PC, O;
 	public boolean running;
 	public int instructionCount = 0;
@@ -29,25 +30,27 @@ public class DCPU {
 		}
 		
 		public boolean rangeContains(char addr) {
-			return addr >= startRange && addr < endRange;
+			return addr >= startRange && addr <= endRange;
 		}
 	}
 	
 	public DCPU() {
-		this(new int[0]);
+		this(new char[0]);
 	}
 
-	public DCPU(int[] mem) {
+	public DCPU(char[] mem) {
 		register = new Cell[11];
 		for (int i = 0; i < 11; i++)
 			register[i] = new Cell(0);
-		memory = new Cell[0x10000]; // 0x10000 words in size
+		memory = new MemoryCell[0x10000]; // 0x10000 words in size
 		for (int i = 0; i < 0x10000; i++)
-			memory[i] = new Cell(i < mem.length ? mem[i] : 0);
+			memory[i] = new MemoryCell(this, (char)i, i < mem.length ? mem[i] : 0);
 
 		SP = new Cell(0);
 		PC = new Cell(0);
 		O = new Cell(0);
+		
+		devices = new ArrayList<Device>();
 	}
 	
 	public DCPU(List<Integer> mem) {
@@ -55,17 +58,17 @@ public class DCPU {
 	}
 	
 	public void setMemory(List<Integer> listMem) {
-		int[] mem = integersToInts(listMem);
+		char[] mem = integersToInts(listMem);
 		for (int i = 0; i < mem.length; i++)
-			memory[i].value = (char)mem[i];
+			memory[i].value = mem[i];
 	}
 	
 	// This is here because Java wants constructor calls to be the first statement in another constructor (see above).
-	private static int[] integersToInts(List<Integer> mem) {
+	private static char[] integersToInts(List<Integer> mem) {
 		Integer[] integers = mem.toArray(new Integer[0]);
-		int[] ints = new int[integers.length];
+		char[] ints = new char[integers.length];
 		for (int i = 0; i < ints.length; i++)
-			ints[i] = integers[i];
+			ints[i] = (char)(int)integers[i];
 		return ints;
 	}
 	
@@ -114,7 +117,6 @@ public class DCPU {
 			return memory[SP.value];
 		} else if (code == 0x1a) {
 			debug("PUSH");
-			//SP.value = (SP.value == 0) ? (char)(0xffff) : (SP.value - 1);
 			return memory[--SP.value];
 		} else if (code == 0x1b) {
 			debug("SP");
@@ -238,9 +240,9 @@ public class DCPU {
 		default:
 			debugln("INVALID BASIC OPERATION");
 		}
-		cellA.value = (char)a;
-		cellB.value = (char)b;
-		O.value = (char)o;
+		cellA.set(a);
+		cellB.set(b);
+		O.set(o);
 	}
 
 	private void processSpecial(int opcode, Cell a) {

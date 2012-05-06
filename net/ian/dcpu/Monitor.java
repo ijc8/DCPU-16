@@ -27,6 +27,8 @@ public class Monitor extends Canvas implements Hardware {
 	public static final int WIDTH = COLUMNS * CHAR_WIDTH * SCALE + BORDER * SCALE * 2;
 	public static final int HEIGHT = ROWS * CHAR_HEIGHT * SCALE + BORDER * SCALE * 2;
 	
+	private BufferedImage screen;
+	
 	public BufferedImage font[];
 	public MonitorCell cells[];
 	
@@ -50,6 +52,8 @@ public class Monitor extends Canvas implements Hardware {
         setMinimumSize(new Dimension(WIDTH, HEIGHT));
         setMaximumSize(new Dimension(WIDTH, HEIGHT));
         
+        screen = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
+        
         cells = new MonitorCell[32 * 12];
         for (int i = 0; i < 32 * 12; i++)
         	cells[i] = new MonitorCell((char)0, Color.BLACK, Color.BLACK);
@@ -59,6 +63,8 @@ public class Monitor extends Canvas implements Hardware {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+        
+        cpu.attachDevice(this, (char)0x8000, (char)0x280);
         
         AffineTransform scale = new AffineTransform();
         scale.scale(SCALE, SCALE);
@@ -82,15 +88,16 @@ public class Monitor extends Canvas implements Hardware {
 		
 		return new Color(r, g, b);
 	}
-	 
-	public void buildFontCharacter(int i, int word1, int word2) {
-		BufferedImage fontChar = font[i];
-		int word = (word1 << 16) | word2;
-
-		for (int col = 3; col >= 0; col--) {
+	
+	public void buildFont(int location, char word) {
+		BufferedImage fontChar = font[location / 2];
+		int half = location % 2;
+		System.out.format("Building %x (%x), half %d, with value %x.\n", location, location / 2, half, (int)word);
+		
+		for (int col = 0; col < 2; col++) {
 			for (int row = 0; row < 8; row++) {
-				int color = ((word >> (col * 8 + row)) & 1) == 1 ? Color.WHITE.getRGB() : Color.BLACK.getRGB();
-				fontChar.setRGB(3 - col, row, color);
+				int color = ((word >> ((1 - col) * 8 + row)) & 1) == 1 ? Color.WHITE.getRGB() : Color.BLACK.getRGB();
+				fontChar.setRGB(col + (half * 2), row, color);
 			}
 		}
 	}
@@ -148,14 +155,9 @@ public class Monitor extends Canvas implements Hardware {
 	}
 	
 	public void render() {
-		Graphics g = getBufferStrategy().getDrawGraphics();
-		paint(g);
-		g.dispose();
-		getBufferStrategy().show();
-	}
-
-	public void paint(Graphics gr) {
-		Graphics2D g = (Graphics2D)gr; 
+		Graphics bsg = getBufferStrategy().getDrawGraphics();
+		Graphics2D g = screen.createGraphics();
+		
 		g.setColor(borderColor);
 		g.fillRect(0, 0, WIDTH, HEIGHT);
 		for (int x = 0; x < COLUMNS; x++) {
@@ -168,17 +170,33 @@ public class Monitor extends Canvas implements Hardware {
 					g.drawImage(replaceColor(font[cell.character], cell.fgColor, cell.bgColor), scaler, x * 4 * SCALE + BORDER * SCALE, y * 8 * SCALE + BORDER * SCALE);
 			}
 		}
+		
+		g.dispose();
+		bsg.drawImage(screen, 0, 0, null);
+		bsg.dispose();
+		getBufferStrategy().show();
+	}
+	
+	public void paint(Graphics g) {
+		g.drawImage(screen, 0, 0, null);
 	}
 
 	@Override
 	public void onSet(char location, char value) {
-		// TODO Auto-generated method stub
-		
+		if (location < 0x8180) {
+    		MonitorCell cell = cells[location - 0x8000];
+    		cell.character = (char)(value & 127);
+    		cell.fgColor = Monitor.convertColor(value >> 12);
+    		cell.bgColor = Monitor.convertColor(value >> 8);
+		} else if (location < 0x8280) {
+			// BUILD HALF A FONT
+			buildFont(location - 0x8180, value);
+		} else if (location == 0x8280)
+			borderColor = convertColor(value);
+		render();
+		//repaint();
 	}
 
 	@Override
-	public void onGet(char location, char value) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void onGet(char location, char value) {}
 }

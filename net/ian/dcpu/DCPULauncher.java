@@ -1,7 +1,6 @@
 package net.ian.dcpu;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -26,7 +25,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	JLabel[][] registers;
     Cell special[];
 	JLabel[][] specialLabels;
-	JLabel instructionLabel[];
+	JLabel instructionLabel;
 
 	private boolean started;
 	
@@ -108,11 +107,10 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
         }
         
         panel.add(new JLabel("Instruction:"));
-        instructionLabel = new JLabel[3];
-        for (int i = 0; i < 3; i++) {
-        	instructionLabel[i] = new JLabel();
-        	panel.add(instructionLabel[i]);
-        }
+        instructionLabel = new JLabel();
+        panel.add(new JLabel("..."));
+        panel.add(new JLabel("..."));
+        panel.add(instructionLabel);
         
         output.add(panel, BorderLayout.SOUTH);
         
@@ -143,8 +141,6 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 				cpu.running = true;
 			}
 			cycle();
-			updateMonitor();
-			monitor.repaint();
 		} else if (command.equals("stop"))
 			cpu.running = false;
 	}
@@ -160,15 +156,8 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	public void run() {
 		started = true;
         cpu.running = true;
-        while (cpu.running) {
+        while (cpu.running)
         	cycle();
-        	
-        	if ((cpu.instructionCount % 60) == 0)
-            	updateMonitor();
-        }
-        
-        updateMonitor();
-        monitor.repaint();
 	}
 	
 	public void cycle() {
@@ -180,10 +169,10 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
     	for (int i = 0; i < special.length; i++)
     		setLabels(specialLabels[i], special[i].value);
     	
-    	setLabels(instructionLabel, cpu.instructionCount);
+    	instructionLabel.setText(Integer.toString(cpu.instructionCount));
 	}
 	
-	public void updateMonitor() {
+	/*public void updateMonitor() {
     	// Rebuild the fonts!
     	for (int i = 0x8180; i < 0x8280; i += 2) {
     		monitor.buildFontCharacter((i - 0x8180) / 2, cpu.memory[i].value, cpu.memory[i+1].value);
@@ -204,7 +193,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
     	// Set border color.
     	monitor.borderColor = Monitor.convertColor(cpu.memory[0x8280].value);
     	monitor.render();
-	}
+	}*/
 	
 	private void setLabels(JLabel[] labels, int value) {
     	labels[0].setText(Integer.toBinaryString(value));
