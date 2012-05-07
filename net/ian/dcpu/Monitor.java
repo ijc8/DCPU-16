@@ -1,18 +1,20 @@
 package net.ian.dcpu;
 
-import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
+import javax.swing.JPanel;
 
-public class Monitor extends Canvas implements Hardware {
+public class Monitor extends JPanel implements Hardware, MouseListener {
 	private static final long serialVersionUID = 1L;
 	
 	public static final int COLUMNS = 32;
@@ -69,11 +71,9 @@ public class Monitor extends Canvas implements Hardware {
         AffineTransform scale = new AffineTransform();
         scale.scale(SCALE, SCALE);
         scaler = new AffineTransformOp(scale, null);
-	}
-	
-	public void addNotify() {
-		super.addNotify();
-		createBufferStrategy(3);
+        
+        setFocusable(true);
+        addMouseListener(this);
 	}
 	
 	public static Color convertColor(int colorBits) {
@@ -155,7 +155,6 @@ public class Monitor extends Canvas implements Hardware {
 	}
 	
 	public void render() {
-		Graphics bsg = getBufferStrategy().getDrawGraphics();
 		Graphics2D g = screen.createGraphics();
 		
 		g.setColor(borderColor);
@@ -172,9 +171,7 @@ public class Monitor extends Canvas implements Hardware {
 		}
 		
 		g.dispose();
-		bsg.drawImage(screen, 0, 0, null);
-		bsg.dispose();
-		getBufferStrategy().show();
+		getGraphics().drawImage(screen, 0, 0, null);
 	}
 	
 	public void paint(Graphics g) {
@@ -194,9 +191,25 @@ public class Monitor extends Canvas implements Hardware {
 		} else if (location == 0x8280)
 			borderColor = convertColor(value);
 		render();
-		//repaint();
 	}
 
 	@Override
 	public void onGet(char location, char value) {}
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		requestFocus();
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {}
+
+	@Override
+	public void mouseExited(MouseEvent e) {}
+
+	@Override
+	public void mousePressed(MouseEvent e) {}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {}
 }
