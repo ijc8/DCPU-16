@@ -98,9 +98,7 @@ public class Assembler {
 	}
 	
 	private List<Integer> parseDat(String line, String[] tokens) {
-		List<Integer> data = new ArrayList<Integer>();
-		//for (String token : Arrays.copyOfRange(tokens, 1, tokens.length))
-		//	data.add(parseInt(token));
+		List<Integer> data = new ArrayList<>();
 		
 		line = line.trim();
 		line = line.substring(3); // Length of "DAT"
@@ -264,11 +262,11 @@ public class Assembler {
 				
 			}
 			
-			//System.out.println("Error: Invalid Argument (assembly): [" + arg + "] (maybe a label?)");
+			// This didn't match anything. It might be referencing a label (this gets fixed in insertLabels()).
 			return new Argument(arg, 0x1e, -1);
 		}
 		
-		//System.out.println("Error: Invalid Argument (assembly): " + arg + " (maybe a label?)");
+		// Same here.
 		return new Argument(arg, 0x1f, -1);
 	}
 	
@@ -285,6 +283,14 @@ public class Assembler {
 				return n;
 			} catch (NumberFormatException _) {
 				// Whelp, it wasn't a hexadecimal number.				
+			}
+		}
+		if (s.toLowerCase().startsWith("0b")) {
+			try {
+				int n = Integer.parseInt(s.substring(2), 2);
+				return n;
+			} catch (NumberFormatException _) {
+				// Also not binary.
 			}
 		}
 		return -1;

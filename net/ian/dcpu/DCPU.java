@@ -142,13 +142,13 @@ public class DCPU {
 		// This skips to the end of the next instruction - used in IF operations.
 		int instruction = memory[PC.value++].value;
 		int a, b = -1;
-		if ((instruction & 0xf) == 0) {
-			// Non-basic opcode
-			a = instruction >> 10 & 0x3f;
+		if ((instruction & 0b1111) == 0) {
+			// Non-basic opcode. aaaaaaoooooo0000
+			a = instruction >> 10 & 0b111111;
 		} else {
-			// Basic opcode
-			a = instruction >> 4 & 0x3f;
-			b = instruction >> 10 & 0x3f;
+			// Basic opcode. bbbbbbaaaaaaoooo
+			a = instruction >>  4 & 0b111111;
+			b = instruction >> 10 & 0b111111;
 		}
 		
 		if ((a >= 0x10 && a <= 0x17) || a == 0x1e || a == 0x1f)
@@ -270,16 +270,16 @@ public class DCPU {
 		int instruction = memory[PC.value].value;
 		int opcode;
 		int rawA, rawB = -1;
-		if ((instruction & 0xf) == 0) {
-			// Non-basic opcode
-			instruction >>= 4; // Lower 4 bits are unset.
-			opcode = instruction & 0x3f;
-			rawA = instruction >> 6 & 0x3f;
+		if ((instruction & 0b1111) == 0) {
+			// Non-basic opcode. aaaaaaoooooo0000
+			instruction >>= 4;
+			opcode = instruction & 0b111111;
+			rawA = instruction >> 6 & 0b111111;
 		} else {
-			// Basic opcode
-			opcode = instruction & 0xf;
-			rawA = instruction >> 4 & 0x3f;
-			rawB = instruction >> 10 & 0x3f;
+			// Basic opcode. bbbbbbaaaaaaoooo
+			opcode = instruction & 0b1111;
+			rawA = instruction >>  4 & 0b111111;
+			rawB = instruction >> 10 & 0b111111;
 		}
 		
 		PC.value++;

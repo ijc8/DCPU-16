@@ -147,7 +147,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	
 	private void reverseLabels() {
 		Map<String, Integer> labels = assembler.labels;
-		Map<Integer, String> reversed = new HashMap<Integer, String>();
+		Map<Integer, String> reversed = new HashMap<>();
 		for (Map.Entry<String, Integer> pair : labels.entrySet())
 			reversed.put(pair.getValue(), pair.getKey());
 		cpu.labels = reversed;
@@ -171,29 +171,6 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
     	
     	instructionLabel.setText(Integer.toString(cpu.instructionCount));
 	}
-	
-	/*public void updateMonitor() {
-    	// Rebuild the fonts!
-    	for (int i = 0x8180; i < 0x8280; i += 2) {
-    		monitor.buildFontCharacter((i - 0x8180) / 2, cpu.memory[i].value, cpu.memory[i+1].value);
-    	}
-    	
-    	// Display stuff.
-    	for (int i = 0x8000; i < 0x8180; i++) {
-    		char character = (char)(cpu.memory[i].value & 127);
-    		Color bgColor = Monitor.convertColor(cpu.memory[i].value >> 8);
-    		Color fgColor = Monitor.convertColor(cpu.memory[i].value >> 12);
-    		Monitor.MonitorCell cell = monitor.cells[i - 0x8000];
-    		
-    		cell.character = character;
-    		cell.fgColor = fgColor;
-    		cell.bgColor = bgColor;
-    	}
-    	
-    	// Set border color.
-    	monitor.borderColor = Monitor.convertColor(cpu.memory[0x8280].value);
-    	monitor.render();
-	}*/
 	
 	private void setLabels(JLabel[] labels, int value) {
     	labels[0].setText(Integer.toBinaryString(value));
