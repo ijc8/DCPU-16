@@ -15,8 +15,9 @@ public class MemoryCell extends Cell {
 	public void set(char value) {
 		super.set(value);
 		for (Device device : cpu.devices) {
-			if (device.rangeContains(addr))
+			if (device.rangeContains(addr)) {
 				device.hardware.onSet(addr, value);
+			}
 		}
 	}
 	

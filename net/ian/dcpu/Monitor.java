@@ -14,7 +14,7 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
-public class Monitor extends JPanel implements Hardware, MouseListener {
+public class Monitor extends JPanel implements Hardware, MouseListener, Runnable {
 	private static final long serialVersionUID = 1L;
 	
 	public static final int COLUMNS = 32;
@@ -38,14 +38,21 @@ public class Monitor extends JPanel implements Hardware, MouseListener {
 	
 	private AffineTransformOp scaler;
 	
+	DCPU cpu;
+
+	private boolean shouldRender;
+	
 	public static class MonitorCell {
 		char character;
 		Color fgColor, bgColor;
+		boolean blink, show;
 		
-		public MonitorCell(char c, Color fg, Color bg) {
+		public MonitorCell(char c, Color fg, Color bg, boolean blink) {
 			character = c;
 			fgColor = fg;
 			bgColor = bg;
+			this.blink = blink;
+			show = false;
 		}
 	}
 	
@@ -55,10 +62,11 @@ public class Monitor extends JPanel implements Hardware, MouseListener {
         setMaximumSize(new Dimension(WIDTH, HEIGHT));
         
         screen = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
+        this.cpu = cpu;
         
         cells = new MonitorCell[32 * 12];
         for (int i = 0; i < 32 * 12; i++)
-        	cells[i] = new MonitorCell((char)0, Color.BLACK, Color.BLACK);
+        	cells[i] = new MonitorCell((char)0, Color.BLACK, Color.BLACK, false);
         
         try {
 			loadFont(cpu);
@@ -90,9 +98,9 @@ public class Monitor extends JPanel implements Hardware, MouseListener {
 	}
 	
 	public void buildFont(int location, char word) {
+		// Actually builds half a font, because a full font takes two words.
 		BufferedImage fontChar = font[location / 2];
 		int half = location % 2;
-		System.out.format("Building %x (%x), half %d, with value %x.\n", location, location / 2, half, (int)word);
 		
 		for (int col = 0; col < 2; col++) {
 			for (int row = 0; row < 8; row++) {
@@ -154,6 +162,27 @@ public class Monitor extends JPanel implements Hardware, MouseListener {
 		return img2;
 	}
 	
+	public void run() {
+		while (cpu.running) {
+			if (System.currentTimeMillis() % 100 == 0) {
+				for (int x = 0; x < COLUMNS; x++) {
+					for (int y = 0; y < ROWS; y++) {
+						MonitorCell cell = cells[y * 32 + x];
+						if (cell.blink) {
+							shouldRender = true;
+							cell.show = !cell.show;
+						}
+					}
+				}
+			}
+			
+			if (shouldRender) {
+				render();
+				shouldRender = false;
+			}
+		}
+	}
+	
 	public void render() {
 		Graphics2D g = screen.createGraphics();
 		
@@ -162,7 +191,10 @@ public class Monitor extends JPanel implements Hardware, MouseListener {
 		for (int x = 0; x < COLUMNS; x++) {
 			for (int y = 0; y < ROWS; y++) {
 				MonitorCell cell = cells[y * 32 + x];
-				if (cell.fgColor.equals(cell.bgColor)) {
+				if (!cell.show) {
+					g.setColor(Color.BLACK);
+					g.fillRect(x * 4 * SCALE + BORDER * SCALE, y * 8 * SCALE + BORDER * SCALE, 4 * SCALE, 8 * SCALE);
+				} else if (cell.fgColor.equals(cell.bgColor)) {
 					g.setColor(cell.bgColor);
 					g.fillRect(x * 4 * SCALE + BORDER * SCALE, y * 8 * SCALE + BORDER * SCALE, 4 * SCALE, 8 * SCALE);
 				} else
@@ -185,12 +217,14 @@ public class Monitor extends JPanel implements Hardware, MouseListener {
     		cell.character = (char)(value & 127);
     		cell.fgColor = Monitor.convertColor(value >> 12);
     		cell.bgColor = Monitor.convertColor(value >> 8);
+    		cell.blink = (value >> 7 & 1) == 1;
+    		cell.show = true;
 		} else if (location < 0x8280) {
 			// BUILD HALF A FONT
 			buildFont(location - 0x8180, value);
 		} else if (location == 0x8280)
 			borderColor = convertColor(value);
-		render();
+		shouldRender = true;
 	}
 
 	@Override
