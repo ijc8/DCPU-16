@@ -306,16 +306,15 @@ public class Assembler {
 		return -1;
 	}
 	
-	// Changes arguments into machine code. This is nice because arguments are 6 bits.
-	public static int compile(int op, int arg1, int arg2) {
-		boolean isBasic = (arg2 != -1);
-		int opLength = isBasic ? 4 : 6;
+	// Changes arguments into machine code.
+	public static int compile(int op, int a, int b) {
+		boolean isBasic = (b != -1);
 		
-		String sOp = String.format("%0" + opLength + "d", Integer.parseInt(Integer.toBinaryString(op))) + (isBasic ? "" : "0000");
-		String sArg1 = String.format("%06d", Integer.parseInt(Integer.toBinaryString(arg1)));
-		String sArg2 = isBasic ? String.format("%06d", Integer.parseInt(Integer.toBinaryString(arg2))) : "";
+		String sOp = String.format("%05d", Integer.parseInt(Integer.toBinaryString(op))) + (isBasic ? "" : "00000");
+		String sA = String.format("%06d", Integer.parseInt(Integer.toBinaryString(a)));
+		String sB = isBasic ? String.format("%56d", Integer.parseInt(Integer.toBinaryString(b))) : "";
 		
-		return Integer.parseInt(sArg2 + sArg1 + sOp, 2);
+		return Integer.parseInt(sA + sB + sOp + (isBasic ? "" : "00000"), 2);
 	}
 	
 	public static int compile(int op, int arg) {
