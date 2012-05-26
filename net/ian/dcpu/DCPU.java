@@ -127,13 +127,13 @@ public class DCPU {
 		// This skips to the end of the next instruction - used in IF operations.
 		int instruction = memory[PC.value++].value;
 		int a, b = -1;
-		if ((instruction & 0b1111) == 0) {
-			// Non-basic opcode. aaaaaaoooooo0000
+		if ((instruction & 0b11111) == 0) {
+			// Non-basic opcode. aaaaaaooooo00000
 			a = instruction >> 10 & 0b111111;
 		} else {
-			// Basic opcode. bbbbbbaaaaaaoooo
-			a = instruction >>  4 & 0b111111;
-			b = instruction >> 10 & 0b111111;
+			// Basic opcode. aaaaaabbbbbooooo
+			a = instruction >> 10 & 0b111111;
+			b = instruction >>  5 & 0b11111;
 		}
 		
 		if ((a >= 0x10 && a <= 0x17) || a == 0x1e || a == 0x1f)
@@ -255,16 +255,16 @@ public class DCPU {
 		int instruction = memory[PC.value].value;
 		int opcode;
 		int rawA, rawB = -1;
-		if ((instruction & 0b1111) == 0) {
-			// Non-basic opcode. aaaaaaoooooo0000
-			instruction >>= 4;
-			opcode = instruction & 0b111111;
+		if ((instruction & 0b11111) == 0) {
+			// Non-basic opcode. aaaaaaooooo00000
+			instruction >>= 5;
+			opcode = instruction & 0b11111;
 			rawA = instruction >> 6 & 0b111111;
 		} else {
-			// Basic opcode. bbbbbbaaaaaaoooo
-			opcode = instruction & 0b1111;
-			rawA = instruction >>  4 & 0b111111;
-			rawB = instruction >> 10 & 0b111111;
+			// Basic opcode. aaaaaabbbbbooooo
+			opcode = instruction & 0b11111;
+			rawA = instruction >> 10 & 0b111111;
+			rawB = instruction >>  5 & 0b11111;
 		}
 		
 		PC.value++;
