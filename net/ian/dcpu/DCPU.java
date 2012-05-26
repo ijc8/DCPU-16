@@ -83,7 +83,7 @@ public class DCPU {
 		register[r.ordinal()].value = value;
 	}
 	
-	private Cell handleArgument(int code) {
+	private Cell handleArgument(int code, boolean isA) {
 		debugf("0x%s: ", Integer.toHexString(code));
 		if (code >= 0x0 && code <= 0x7) {
 			debug(Register.values()[code]);
@@ -95,14 +95,14 @@ public class DCPU {
 			debugf("[next word + %s]", Register.values()[code - 0x10]);
 			return memory[memory[PC.value++].value + register[code - 0x10].value];
 		} else if (code == 0x18) {
-			debug("POP");
-			return memory[SP.value++];
+			debug(isA ? "POP" : "PUSH");
+			return isA ? memory[SP.value++] : memory[--SP.value];
 		} else if (code == 0x19) {
 			debug("PEEK");
 			return memory[SP.value];
 		} else if (code == 0x1a) {
-			debug("PUSH");
-			return memory[--SP.value];
+			debug("PICK " + memory[PC.value].value);
+			return memory[SP.value + memory[PC.value++].value];
 		} else if (code == 0x1b) {
 			debug("SP");
 			return SP;
@@ -119,6 +119,7 @@ public class DCPU {
 			debug("next word (literal)");
 			return new Cell(memory[PC.value++].value);
 		}
+		// Only should happen if argument is A.
 		debug("literal: " + (code - 0x20));
 		return new Cell(code - 0x20);
 	}
@@ -270,11 +271,11 @@ public class DCPU {
 		PC.value++;
 		
 		debug("A: ");
-		Cell a = handleArgument(rawA), b = null;
+		Cell a = handleArgument(rawA, true), b = null;
 		debugln(" = " + (int)a.value);
 		if (rawB != -1) {
 			debug("B: ");
-			b = handleArgument(rawB);
+			b = handleArgument(rawB, false);
 			debugln(" = " + (int)b.value);
 		}
 		
