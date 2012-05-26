@@ -286,11 +286,11 @@ public class DCPU {
 		
 		debug("A: ");
 		Cell a = handleArgument(rawA), b = null;
-		debugln(" = " + a.value);
+		debugln(" = " + (int)a.value);
 		if (rawB != -1) {
 			debug("B: ");
 			b = handleArgument(rawB);
-			debugln(" = " + b.value);
+			debugln(" = " + (int)b.value);
 		}
 		
 		if (b != null)
