@@ -74,7 +74,7 @@ public class Monitor extends JPanel implements Hardware, MouseListener, Runnable
 			e.printStackTrace();
 		}
         
-        cpu.attachDevice(this, (char)0x8000, (char)0x280);
+        cpu.attachDevice(this);
         
         AffineTransform scale = new AffineTransform();
         scale.scale(SCALE, SCALE);
@@ -229,6 +229,11 @@ public class Monitor extends JPanel implements Hardware, MouseListener, Runnable
 
 	@Override
 	public void onGet(char location, char value) {}
+	
+	@Override
+	public boolean inMemoryRange(char loc) {
+		return loc >= 0x8000 && loc <= 0x8280;
+	}
 
 	@Override
 	public void mouseClicked(MouseEvent e) {

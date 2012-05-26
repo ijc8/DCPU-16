@@ -17,22 +17,7 @@ public class DCPU {
 	
 	public enum Register { A, B, C, X, Y, Z, I, J };
 	
-	public List<Device> devices;
-	
-	public class Device {
-		char startRange, endRange;
-		public Hardware hardware;
-		
-		public Device(Hardware h, char start, char size) {
-			this.hardware = h;
-			this.startRange = start;
-			this.endRange = (char)(start + size);
-		}
-		
-		public boolean rangeContains(char addr) {
-			return addr >= startRange && addr <= endRange;
-		}
-	}
+	public List<Hardware> devices;
 	
 	public DCPU() {
 		this(new char[0]);
@@ -50,7 +35,7 @@ public class DCPU {
 		PC = new Cell(0);
 		O = new Cell(0);
 		
-		devices = new ArrayList<Device>();
+		devices = new ArrayList<Hardware>();
 	}
 	
 	public DCPU(List<Integer> mem) {
@@ -87,8 +72,8 @@ public class DCPU {
 			System.out.printf(s, o);
 	}
 	
-	public void attachDevice(Hardware h, char start, char size) {
-		devices.add(new Device(h, start, size));
+	public void attachDevice(Hardware h) {
+		devices.add(h);
 	}
 	public Cell getRegister(Register r) {
 		return register[r.ordinal()];

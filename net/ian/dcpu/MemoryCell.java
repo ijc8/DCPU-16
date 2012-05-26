@@ -1,7 +1,5 @@
 package net.ian.dcpu;
 
-import net.ian.dcpu.DCPU.Device;
-
 public class MemoryCell extends Cell {
 	private DCPU cpu;
 	private char addr;
@@ -14,17 +12,17 @@ public class MemoryCell extends Cell {
 	
 	public void set(char value) {
 		super.set(value);
-		for (Device device : cpu.devices) {
-			if (device.rangeContains(addr)) {
-				device.hardware.onSet(addr, value);
+		for (Hardware device : cpu.devices) {
+			if (device.inMemoryRange(addr)) {
+				device.onSet(addr, value);
 			}
 		}
 	}
 	
 	public char get() {
-		for (Device device : cpu.devices) {
-			if (device.rangeContains(addr))
-				device.hardware.onGet(addr, value);
+		for (Hardware device : cpu.devices) {
+			if (device.inMemoryRange(addr))
+				device.onGet(addr, value);
 		}
 		return value;
 	}
