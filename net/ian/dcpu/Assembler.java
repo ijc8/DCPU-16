@@ -199,7 +199,7 @@ public class Assembler {
 		}
 		
 		ArrayList<Integer> words = new ArrayList<Integer>();
-		words.add(compile(op, a, b));
+		words.add(compile(op, b, a));
 		words.addAll(codeA.subList(1, codeA.size()));
 		if (argB != null)
 			words.addAll(codeB.subList(1, codeB.size()));
@@ -297,11 +297,11 @@ public class Assembler {
 	}
 	
 	private static int handleStack(String s) {
-		if (s.equals("POP"))
+		if (s.equals("POP") || s.equals("PUSH"))
 			return 0x18;
 		if (s.equals("PEEK"))
 			return 0x19;
-		if (s.equals("PUSH"))
+		if (s.equals("PICK")) // TODO allow index after PICK.
 			return 0x1a;
 		return -1;
 	}
@@ -312,8 +312,8 @@ public class Assembler {
 		
 		String sOp = String.format("%05d", Integer.parseInt(Integer.toBinaryString(op))) + (isBasic ? "" : "00000");
 		String sA = String.format("%06d", Integer.parseInt(Integer.toBinaryString(a)));
-		String sB = isBasic ? String.format("%56d", Integer.parseInt(Integer.toBinaryString(b))) : "";
-		
+		String sB = isBasic ? String.format("%05d", Integer.parseInt(Integer.toBinaryString(b))) : "";
+				
 		return Integer.parseInt(sA + sB + sOp + (isBasic ? "" : "00000"), 2);
 	}
 	

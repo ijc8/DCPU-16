@@ -148,79 +148,76 @@ public class DCPU {
 		int b = cellB.value;
 		int o = 0;
 		switch (opcode) {
-		case 0x1: // SET a to b
+		case 0x1: // SET b to a
 			debugln("SET");
-			a = b;
+			b = a;
 			break;
-		case 0x2: // ADD b to a
+		case 0x2: // ADD a to b
 			debugln("ADD");
-			o = (a += b) > 0xffff ? 1 : 0;
-			a &= 0xffff;
+			o = (b += a) > 0xffff ? 1 : 0;
 			break;
-		case 0x3: // SUBTRACT b from a
+		case 0x3: // SUBTRACT a from b
 			debugln("SUB");
-			o = (a -= b) < 0 ? 0xffff : 0;
-			a = a < 0 ? 0 : a;
+			o = (b -= a) < 0 ? 0xffff : 0;
 			break;
-		case 0x4: // MUL multiplies a by b
+		case 0x4: // MUL multiplies b by a
 			debugln("MUL");
-			o = (a *= b) >> 16 & 0xffff;
-			a &= 0xffff;
+			o = (b *= a) >> 16 & 0xffff;
 			break;
-		case 0x5: // DIV divides a by b
+		case 0x5: // DIV divides b by a
 			debugln("DIV");
-			if (b == 0) {
-				a = 0;
+			if (a == 0) {
+				b = 0;
 				O.value = 0;
 			} else {
-				O.value = (char)(((a << 16) / b) & 0xffff);
-				a /= b;
+				O.value = (char)(((b << 16) / a) & 0xffff);
+				b /= a;
 			}
 			break;
-		case 0x6: // MOD (sets a to a % b)
+		case 0x6: // MOD (sets b to b % a)
 			debugln("MOD");
-			a = (b == 0) ? 0 : a % b;
+			a = (a == 0) ? 0 : b % a;
 			break;
-		case 0x7: // SHL shifts a left by b
+		case 0x7: // SHL shifts b left by a
 			debugln("SHL");
-			O.value = (char)(a << b >> 16 & 0xffff);
-			a = a << b & 0xffff;
+			O.value = (char)(b << a >> 16 & 0xffff);
+			b = b << a & 0xffff;
 			break;
-		case 0x8: // SHR shifts a right by b
+		case 0x8: // SHR shifts b right by a
 			debugln("SHR");
-			O.value = (char)(a << 16 >> b & 0xffff);
-			a >>= b;
+			O.value = (char)(b << 16 >> a & 0xffff);
+			b >>= a;
 			break;
-		case 0x9: // AND sets a to a & b
+		case 0x9: // AND sets b to b & a
 			debugln("AND");
-			a &= b;
+			b &= a;
 			break;
-		case 0xa: // BOR sets a to a | b
+		case 0xa: // BOR sets b to b | a
 			debugln("BOR");
-			a |= b;
+			b |= a;
 			break;
-		case 0xb: // XOR sets a to a ^ b
+		case 0xb: // XOR sets b to b ^ a
 			debugln("XOR");
-			a ^= b;
+			b ^= a;
 			break;
-		case 0xc: // IFE performs next instruction if a == b
+		case 0xc: // IFE performs next instruction if b == a
 			debugln("IFE");
-			if (a != b)
+			if (b != a)
 				skipInstruction();
 			break;
-		case 0xd: // IFN performs next instruction if a != b
+		case 0xd: // IFN performs next instruction if b != a
 			debugln("IFN");
-			if (a == b)
+			if (b == a)
 				skipInstruction();
 			break;
-		case 0xe: // IFG performs next instruction if a > b
+		case 0xe: // IFG performs next instruction if b > a
 			debugln("IFG");
-			if (a <= b)
+			if (b <= a)
 				skipInstruction();
 			break;
-		case 0xf: // IFB performs next instructions if (a & b) != 0
+		case 0xf: // IFB performs next instructions if (b & a) != 0
 			debugln("IFB");
-			if ((a & b) == 0)
+			if ((b & a) == 0)
 				skipInstruction();
 			break;
 		default:
