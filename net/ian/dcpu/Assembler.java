@@ -7,8 +7,20 @@ import java.util.List;
 import java.util.Map;
 
 public class Assembler {
-	public static final String[] basicOps = { "SET", "ADD", "SUB", "MUL", "DIV", "MOD", "SHL", "SHR", "AND", "BOR", "XOR", "IFE", "IFN", "IFG", "IFB" };
-	public static final String[] specialOps = { "EXIT", "JSR" };
+	// Blanks correspond to unspecified operations.
+	public static final String[] basicOps = {
+		"SET", "ADD", "SUB", "MUL", "MLI", "DIV", "DVI", "MOD",
+		"MDI", "AND", "BOR", "XOR", "SHR", "ASR", "SHL", "IFB",
+		"IFC", "IFE", "IFN", "IFG", "IFA", "IFL", "IFU", "   ",
+		"   ", "ADX", "SBX", "   ", "   ", "STI", "STD"
+		};
+
+	public static final String[] specialOps = {
+		"JSR", "   ", "   ", "   ", "   ", "   ", "HCF", "INT",
+		"IAG", "IAS", "RFI", "IAQ", "   ", "   ", "   ", "HWN",
+		"HWQ", "HWI", "   ", "   ", "   ", "   ", "   ", "   ",
+		"   ", "   ", "   ", "   ", "   ", "   ", "   "
+		};
 	public static final String[] registers;
 	public static final String[] special = { "SP", "PC", "O" };
 

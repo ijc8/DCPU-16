@@ -164,7 +164,7 @@ public class DCPU {
 			debugln("MUL");
 			o = (b *= a) >> 16 & 0xffff;
 			break;
-		case 0x5: // DIV divides b by a
+		case 0x6: // DIV divides b by a
 			debugln("DIV");
 			if (a == 0) {
 				b = 0;
@@ -174,54 +174,54 @@ public class DCPU {
 				b /= a;
 			}
 			break;
-		case 0x6: // MOD (sets b to b % a)
+		case 0x8: // MOD (sets b to b % a)
 			debugln("MOD");
 			a = (a == 0) ? 0 : b % a;
 			break;
-		case 0x7: // SHL shifts b left by a
-			debugln("SHL");
-			O.value = (char)(b << a >> 16 & 0xffff);
-			b = b << a & 0xffff;
+		case 0xa: // AND sets b to b & a
+			debugln("AND");
+			b &= a;
 			break;
-		case 0x8: // SHR shifts b right by a
+		case 0xb: // BOR sets b to b | a
+			debugln("BOR");
+			b |= a;
+			break;
+		case 0xc: // XOR sets b to b ^ a
+			debugln("XOR");
+			b ^= a;
+			break;
+		case 0xd: // SHR shifts b right by a
 			debugln("SHR");
 			O.value = (char)(b << 16 >> a & 0xffff);
 			b >>= a;
 			break;
-		case 0x9: // AND sets b to b & a
-			debugln("AND");
-			b &= a;
+		case 0xf: // SHL shifts b left by a
+			debugln("SHL");
+			O.value = (char)(b << a >> 16 & 0xffff);
+			b = b << a & 0xffff;
 			break;
-		case 0xa: // BOR sets b to b | a
-			debugln("BOR");
-			b |= a;
-			break;
-		case 0xb: // XOR sets b to b ^ a
-			debugln("XOR");
-			b ^= a;
-			break;
-		case 0xc: // IFE performs next instruction if b == a
-			debugln("IFE");
-			if (b != a)
-				skipInstruction();
-			break;
-		case 0xd: // IFN performs next instruction if b != a
-			debugln("IFN");
-			if (b == a)
-				skipInstruction();
-			break;
-		case 0xe: // IFG performs next instruction if b > a
-			debugln("IFG");
-			if (b <= a)
-				skipInstruction();
-			break;
-		case 0xf: // IFB performs next instructions if (b & a) != 0
+		case 0x10: // IFB performs next instructions if (b & a) != 0
 			debugln("IFB");
 			if ((b & a) == 0)
 				skipInstruction();
 			break;
+		case 0x12: // IFE performs next instruction if b == a
+			debugln("IFE");
+			if (b != a)
+				skipInstruction();
+			break;
+		case 0x13: // IFN performs next instruction if b != a
+			debugln("IFN");
+			if (b == a)
+				skipInstruction();
+			break;
+		case 0x14: // IFG performs next instruction if b > a
+			debugln("IFG");
+			if (b <= a)
+				skipInstruction();
+			break;
 		default:
-			debugln("INVALID BASIC OPERATION");
+			debugln("Error: Unimplemented instruction: 0x" + Integer.toHexString(opcode));
 		}
 		cellA.set(a);
 		cellB.set(b);
