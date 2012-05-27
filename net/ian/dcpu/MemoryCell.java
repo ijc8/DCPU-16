@@ -11,10 +11,12 @@ public class MemoryCell extends Cell {
 	}
 	
 	public void set(char value) {
+		char old = this.value;
 		super.set(value);
-		for (Hardware device : cpu.devices) {
-			if (device.inMemoryRange(addr)) {
-				device.onSet(addr, value);
+		if (value != old) {
+			for (Hardware device : cpu.devices) {
+				if (device.inMemoryRange(addr))
+					device.onSet(addr, value);
 			}
 		}
 	}
