@@ -222,44 +222,36 @@ public class DCPU {
 			ex = b << a >> 16;
 			b = b << a;
 			break;
-		case 0x10: // IFB - performs next instructions if (b & a) != 0
+		case 0x10: // IFB - performs next instruction if (b & a) != 0
 			debugln("IFB");
-			if ((b & a) == 0)
-				skipInstruction();
+			skipping = (b & a) == 0;
 			break;
-		case 0x11: // IFC - performs next instructions if (b & a) == 0
+		case 0x11: // IFC - performs next instruction if (b & a) == 0
 			debugln("IFC");
-			if ((b & a) != 0)
-				skipInstruction();
+			skipping = (b & a) != 0;
 		case 0x12: // IFE - performs next instruction if b == a
 			debugln("IFE");
-			if (b != a)
-				skipInstruction();
+			skipping = b != a;
 			break;
 		case 0x13: // IFN - performs next instruction if b != a
 			debugln("IFN");
-			if (b == a)
-				skipInstruction();
+			skipping = b == a;
 			break;
 		case 0x14: // IFG - performs next instruction if b > a
 			debugln("IFG");
-			if (b <= a)
-				skipInstruction();
+			skipping = b <= a;
 			break;
 		case 0x15: // IFA - IFG with signed values
 			debugln("IFA");
-			if ((short)b <= (short)a)
-				skipInstruction();
+			skipping = (short)b <= (short)a;
 			break;
 		case 0x16: // IFL - performs next instruction if b < a
 			debugln("IFL");
-			if (b >= a)
-				skipInstruction();
+			skipping = b >= a;
 			break;
 		case 0x17: // IFU - IFL with signed values
 			debugln("IFU");
-			if ((short)b >= (short)a)
-				skipInstruction();
+			skipping = (short)b >= (short)a; 
 			break;
 		case 0x1a: // ADX - sets b to b+a+EX
 			debugln("ADX");
@@ -314,9 +306,9 @@ public class DCPU {
 		}
 		
 		int instruction = memory[PC.value].value;
-		int opcode;
+		int opcode = 0;
 		int rawA, rawB = -1;
-		if ((instruction & 0b11111) == 0) {
+		if ((instruction & 0b11111) == 0 && !skipping) {
 			// Non-basic opcode. aaaaaaooooo00000
 			instruction >>= 5;
 			opcode = instruction & 0b11111;
@@ -330,6 +322,13 @@ public class DCPU {
 		
 		PC.value++;
 		
+		if (skipping) {
+			skipping = false;
+			if (opcode >= 0x10 && opcode <= 0x17)
+				skipping = true;
+			return;
+		}
+
 		debug("A: ");
 		Cell a = handleArgument(rawA, true), b = null;
 		debugln(" = " + (int)a.value);
