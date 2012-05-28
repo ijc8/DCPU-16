@@ -208,9 +208,14 @@ public class DCPU {
 			debugln("XOR");
 			b ^= a;
 			break;
-		case 0xd: // SHR shifts b right by a
+		case 0xd: // SHR shifts b right by a (logical shift)
 			debugln("SHR");
 			o = (char)(b << 16 >> a);
+			b >>>= a;
+			break;
+		case 0xe: // ASR shift b right by a (arithmetic shift)
+			debugln("ASR");
+			o = (char)(b << 16 >>> a);
 			b >>= a;
 			break;
 		case 0xf: // SHL shifts b left by a
