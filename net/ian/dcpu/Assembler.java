@@ -25,7 +25,7 @@ public class Assembler {
 	public static final String[] registers;
 	public static final String[] special = { "SP", "PC", "O" };
 
-	public ArrayList<Integer> instructions;
+	public ArrayList<Character> instructions;
 	
 	public Map<String, Integer> labels;
 	public Map<Integer, String> fixes;
@@ -38,21 +38,36 @@ public class Assembler {
 	}
 	
 	private class Argument {
-		public List<Integer> code;
+		public List<Character> code;
 		public String label = null;
 		
-		public Argument(Integer... args) {
+		@SuppressWarnings("unused")
+		public Argument(Character... args) {
 			code = Arrays.asList(args);
 		}
 		
-		public Argument(String label, Integer... args) {
+		// I immensely dislike how Java makes a big
+		// distinction between integer data types.
+		public Argument(int... args) {
+			code = new ArrayList<Character>();
+			for (int i : args)
+				code.add((char)i);
+		}
+		
+		@SuppressWarnings("unused")
+		public Argument(String label, Character... args) {
 			code = Arrays.asList(args);
+			this.label = label;
+		}
+		
+		public Argument(String label, int... args) {
+			this(args);
 			this.label = label;
 		}
 	}
 	
-	public List<Integer> assemble(String code) {
-		instructions = new ArrayList<Integer>();
+	public List<Character> assemble(String code) {
+		instructions = new ArrayList<Character>();
 		labels = new HashMap<String, Integer>();
 		fixes = new HashMap<Integer, String>();
 		
@@ -97,9 +112,9 @@ public class Assembler {
 			String arg2 = null;
 			if (tokens.length > 2)
 				arg2 = tokens[2];
-			List<Integer> assembled = assemble(op, arg1, arg2);
+			List<Character> assembled = assemble(op, arg1, arg2);
 			if (assembled == null)
-				instructions.add(-1);
+				instructions.add((char)0);
 			else
 				instructions.addAll(assembled);
 		}
@@ -109,8 +124,8 @@ public class Assembler {
 		return instructions;
 	}
 	
-	private List<Integer> parseDat(String line, String[] tokens) {
-		List<Integer> data = new ArrayList<>();
+	private List<Character> parseDat(String line, String[] tokens) {
+		List<Character> data = new ArrayList<>();
 		
 		line = line.trim();
 		line = line.substring(3); // Length of "DAT"
@@ -125,20 +140,20 @@ public class Assembler {
 				while (true) {
 					if (line.charAt(i) == '\\') {
 						if (line.charAt(i+1) == 'n')
-							data.add((int)'\n');
+							data.add('\n');
 						else if (line.charAt(i+1) == 't')
-							data.add((int)'\t');
+							data.add('\t');
 						else if (line.charAt(i+1) == '"')
-							data.add((int)'"');
+							data.add('"');
 						else if (line.charAt(i+1) == '0')
-							data.add((int)'\0');
+							data.add('\0');
 						else
-							data.add((int)line.charAt(i+1));
+							data.add(line.charAt(i+1));
 						i += 2;
 						continue;
 					} else if (line.charAt(i) == '"')
 						break;
-					data.add((int)line.charAt(i));
+					data.add(line.charAt(i));
 					i++;
 				}
 				line = line.substring(i+1);
@@ -153,7 +168,7 @@ public class Assembler {
 					line = split[1];
 					continue;
 				}
-				data.add(parseInt(num));
+				data.add((char)parseInt(num));
 				line = line.substring(num.length());
 				System.out.println("\"" + line + "\"");
 			}
@@ -162,8 +177,8 @@ public class Assembler {
 		return data;
 	}
 
-	// This inserts labels in parts of the program where they were used before they existed,
-	// via the "fixes" map.
+	// This inserts labels in parts of the program where they
+	// were used before they existed, via the "fixes" map.
 	private void insertLabels() {
 		for (Map.Entry<Integer, String> entry : fixes.entrySet()) {
 			int index = entry.getKey();
@@ -171,13 +186,13 @@ public class Assembler {
 			System.out.printf("Fixing: %s at %d\n", label, index);
 			Integer loc;
 			if ((loc = labels.get(label)) != null) {
-				instructions.set(index, loc);
+				instructions.set(index, (char)(int)loc);
 			} else
 				System.out.printf("Error: True assembly error (in insertLabels): %s at %d\n", label, index);
 		}
 	}
 	
-	public List<Integer> assemble(String sOp, String sArg1, String sArg2) {
+	public List<Character> assemble(String sOp, String sArg1, String sArg2) {
 		sOp = sOp.toUpperCase();
 		boolean isBasic = (sArg2 != null);
 		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp) + (isBasic ? 1 : 0);
@@ -191,7 +206,7 @@ public class Assembler {
 			sArg2 = sArg2.toUpperCase();
 		
 		Argument argA = handleArgument(sArg1);
-		List<Integer> codeA = argA.code;
+		List<Character> codeA = argA.code;
 		instructionCount += codeA.size() - 1;
 		
 		if (argA.label != null)
@@ -200,7 +215,7 @@ public class Assembler {
 		a = codeA.get(0);
 			
 		Argument argB = null;
-		List<Integer> codeB = null;
+		List<Character> codeB = null;
 		if (isBasic) {
 			argB = handleArgument(sArg2);
 			codeB = argB.code;
@@ -210,7 +225,7 @@ public class Assembler {
 			b = codeB.get(0);
 		}
 		
-		ArrayList<Integer> words = new ArrayList<Integer>();
+		List<Character> words = new ArrayList<>();
 		words.add(compile(op, b, a));
 		words.addAll(codeA.subList(1, codeA.size()));
 		if (argB != null)
@@ -219,7 +234,7 @@ public class Assembler {
 		return words;
 	}
 	
-	public List<Integer> assemble(String op, String arg) {
+	public List<Character> assemble(String op, String arg) {
 		return assemble(op, arg, null);
 	}
 	 
@@ -332,17 +347,17 @@ public class Assembler {
 	}
 	
 	// Changes arguments into machine code.
-	public static int compile(int op, int a, int b) {
+	public static char compile(int op, int a, int b) {
 		boolean isBasic = (b != -1);
 		
 		String sOp = String.format("%05d", Integer.parseInt(Integer.toBinaryString(op))) + (isBasic ? "" : "00000");
 		String sA = String.format("%06d", Integer.parseInt(Integer.toBinaryString(a)));
 		String sB = isBasic ? String.format("%05d", Integer.parseInt(Integer.toBinaryString(b))) : "";
 				
-		return Integer.parseInt(sA + sB + sOp + (isBasic ? "" : "00000"), 2);
+		return (char)Integer.parseInt(sA + sB + sOp + (isBasic ? "" : "00000"), 2);
 	}
 	
-	public static int compile(int op, int arg) {
+	public static char compile(int op, int arg) {
 		return compile(op, arg, -1);
 	}
 	

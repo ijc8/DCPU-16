@@ -42,22 +42,22 @@ public class DCPU {
 		devices = new ArrayList<Hardware>();
 	}
 	
-	public DCPU(List<Integer> mem) {
-		this(integersToInts(mem));
+	public DCPU(List<Character> mem) {
+		this(unboxArray(mem));
 	}
 	
-	public void setMemory(List<Integer> listMem) {
-		char[] mem = integersToInts(listMem);
+	public void setMemory(List<Character> listMem) {
+		char[] mem = unboxArray(listMem);
 		for (int i = 0; i < mem.length; i++)
 			memory[i].value = mem[i];
 	}
 	
-	// This is here because Java wants constructor calls to be the first statement in another constructor (see above).
-	private static char[] integersToInts(List<Integer> mem) {
-		Integer[] integers = mem.toArray(new Integer[0]);
-		char[] ints = new char[integers.length];
+	// Bleh.
+	private static char[] unboxArray(List<Character> mem) {
+		Character[] chars = mem.toArray(new Character[0]);
+		char[] ints = new char[chars.length];
 		for (int i = 0; i < ints.length; i++)
-			ints[i] = (char)(int)integers[i];
+			ints[i] = (char)chars[i];
 		return ints;
 	}
 	
@@ -343,9 +343,9 @@ public class DCPU {
 	
 	public static void main(String args[]) {
 		Scanner s = new Scanner(System.in);
-		List<Integer> code = new ArrayList<>();
+		List<Character> code = new ArrayList<>();
 		while (s.hasNextInt(16))
-			code.add(s.nextInt(16));
+			code.add((char)s.nextInt(16));
 		DCPU cpu = new DCPU(code);
 		cpu.run();
 		System.out.print(cpu.dump());
