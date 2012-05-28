@@ -103,7 +103,6 @@ public class Assembler {
 				instructions.addAll(assembled);
 		}
 		
-		System.out.println(labels);
 		insertLabels();
 		
 		return instructions;
@@ -236,15 +235,15 @@ public class Assembler {
 		
 		if (labels.containsKey(arg)) {
 			int loc = labels.get(arg);
-			if (loc < 31)
-				return new Argument(loc + 0x20);
+			if (loc < 30)
+				return new Argument(loc + 0x21);
 			return new Argument(0x1f, loc);
 		}
 		
 		int n = parseInt(arg);
-		if (n != -1) {
-			if (n < 31)
-				return new Argument(n + 0x20);
+		if (n != -2) {
+			if (n < 30)
+				return new Argument(n + 0x21);
 			return new Argument(0x1f, n);
 		}
 		
@@ -256,7 +255,7 @@ public class Assembler {
 			arg = arg.substring(1, arg.length() - 1);
 			if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
 				return new Argument(index + 0x8);
-			if ((n = parseInt(arg)) != -1)
+			if ((n = parseInt(arg)) != -2)
 				return new Argument(0x1e, n);
 			if (labels.containsKey(arg))
 				return new Argument(0x1e, labels.get(arg));
@@ -266,7 +265,7 @@ public class Assembler {
 				for (int i = 0; i < 2; i++) {
 					if ((index = Arrays.asList(registers).indexOf(split[i])) != -1) {
 						other = split[1 - i];
-						if ((n = parseInt(other)) != -1)
+						if ((n = parseInt(other)) != -2)
 							return new Argument(index + 0x10, n);
 						return new Argument(other, index + 0x10, -1);
 					}
@@ -289,10 +288,15 @@ public class Assembler {
 		} catch (NumberFormatException _) {
 			// Whelp, it wasn't a decimal number.
 		}
+		int sign = 1;
+		if (s.startsWith("+") || s.startsWith("-")) {
+			sign = s.startsWith("+") ? 1 : -1;
+			s = s.substring(1);
+		}
 		if (s.toLowerCase().startsWith("0x")) {
 			try {
 				int n = Integer.parseInt(s.substring(2), 16);
-				return n;
+				return n * sign;
 			} catch (NumberFormatException _) {
 				// Whelp, it wasn't a hexadecimal number.				
 			}
@@ -300,12 +304,13 @@ public class Assembler {
 		if (s.toLowerCase().startsWith("0b")) {
 			try {
 				int n = Integer.parseInt(s.substring(2), 2);
-				return n;
+				return n * sign;
 			} catch (NumberFormatException _) {
 				// Also not binary.
 			}
 		}
-		return -1;
+		// TODO: Make this throw an exception. Numbers < -1 are valid for next word (literal).
+		return -2;
 	}
 	
 	private static int handleStack(String s) {

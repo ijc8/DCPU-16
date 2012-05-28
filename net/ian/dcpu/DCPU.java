@@ -120,8 +120,8 @@ public class DCPU {
 			return new Cell(memory[PC.value++].value);
 		}
 		// Only should happen if argument is A.
-		debug("literal: " + (code - 0x20));
-		return new Cell(code - 0x20);
+		debug("literal: " + (code - 0x21));
+		return new Cell(code - 0x21);
 	}
 	
 	private void skipInstruction() {
@@ -141,6 +141,16 @@ public class DCPU {
 			PC.value++;
 		if ((b >= 0x10 && b <= 0x17) || b == 0x1e || b == 0x1f)
 			PC.value++;
+	}
+	
+	// Convert from unsigned encoded in two's complement to signed.
+	public short toSigned(int value) {
+		short result = (short)value;
+		if (value > Short.MAX_VALUE) {
+			// Value is negative (means left-most bit is set).
+			result = (short)-(~(char)(value - 1));
+		}
+		return result;
 	}
 	
 	private void processBasic(int opcode, Cell cellA, Cell cellB) {
@@ -164,20 +174,38 @@ public class DCPU {
 			debugln("MUL");
 			o = (b *= a) >> 16 & 0xffff;
 			break;
+		case 0x5: // MLI multiplies signed values
+			debugln("MLI");
+			b = (short)a * (short)b;
+			o = b >> 16 & 0xffff;
+			break;
 		case 0x6: // DIV divides b by a
 			debugln("DIV");
 			if (a == 0) {
 				b = 0;
-				O.value = 0;
+				o = 0;
 			} else {
-				O.value = (char)(((b << 16) / a) & 0xffff);
+				o = (char)((b << 16) / a);
 				b /= a;
+			}
+			break;
+		case 0x7: // DVI divides signed values
+			debugln("DVI");
+			if (a == 0) {
+				b = 0;
+				o = 0;
+			} else {
+				o = ((short)b << 16) / (short)a;
+				b = (short)b / (short)a;
 			}
 			break;
 		case 0x8: // MOD (sets b to b % a)
 			debugln("MOD");
-			a = (a == 0) ? 0 : b % a;
+			b = (a == 0) ? 0 : b % a;
 			break;
+		case 0x9: // MDI MOD with signed values
+			debugln("MDI");
+			b = (a == 0) ? 0 : (short)b % (short)a;
 		case 0xa: // AND sets b to b & a
 			debugln("AND");
 			b &= a;
@@ -192,13 +220,13 @@ public class DCPU {
 			break;
 		case 0xd: // SHR shifts b right by a
 			debugln("SHR");
-			O.value = (char)(b << 16 >> a & 0xffff);
+			o = (char)(b << 16 >> a);
 			b >>= a;
 			break;
 		case 0xf: // SHL shifts b left by a
 			debugln("SHL");
-			O.value = (char)(b << a >> 16 & 0xffff);
-			b = b << a & 0xffff;
+			o = (char)(b << a >> 16);
+			b = b << a;
 			break;
 		case 0x10: // IFB performs next instructions if (b & a) != 0
 			debugln("IFB");
