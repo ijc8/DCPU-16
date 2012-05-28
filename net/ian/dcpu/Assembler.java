@@ -240,12 +240,13 @@ public class Assembler {
 			return new Argument(0x1f, loc);
 		}
 		
-		int n = parseInt(arg);
-		if (n != -2) {
-			if (n < 30)
+		int n;
+		try {
+			n = parseInt(arg);
+			if (n >= -1 && n < 30)
 				return new Argument(n + 0x21);
 			return new Argument(0x1f, n);
-		}
+		} catch (NumberFormatException _) {}
 		
 		if (arg.startsWith("[")) {
 			if (!arg.endsWith("]")) {
@@ -255,8 +256,11 @@ public class Assembler {
 			arg = arg.substring(1, arg.length() - 1);
 			if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
 				return new Argument(index + 0x8);
-			if ((n = parseInt(arg)) != -2)
+			try {
+				n = parseInt(arg);
 				return new Argument(0x1e, n);
+			} catch (NumberFormatException _) {}
+				
 			if (labels.containsKey(arg))
 				return new Argument(0x1e, labels.get(arg));
 			if (arg.contains("+")) {
@@ -265,8 +269,10 @@ public class Assembler {
 				for (int i = 0; i < 2; i++) {
 					if ((index = Arrays.asList(registers).indexOf(split[i])) != -1) {
 						other = split[1 - i];
-						if ((n = parseInt(other)) != -2)
+						try {
+							n = parseInt(other);
 							return new Argument(index + 0x10, n);
+						} catch (NumberFormatException _) {}
 						return new Argument(other, index + 0x10, -1);
 					}
 				}
@@ -281,7 +287,7 @@ public class Assembler {
 		return new Argument(arg, 0x1f, -1);
 	}
 	
-	private static int parseInt(String s) {
+	private static int parseInt(String s) throws NumberFormatException {
 		try {
 			int n = Integer.parseInt(s);
 			return n;
@@ -309,8 +315,9 @@ public class Assembler {
 				// Also not binary.
 			}
 		}
-		// TODO: Make this throw an exception. Numbers < -1 are valid for next word (literal).
-		return -2;
+		
+		// I don't care if it's used by Integer.parseInt(), I'm stealing it! Muahahahaha!
+		throw new NumberFormatException("Could not convert string \"" + s + "\" to a decimal, hex, or binary number.");
 	}
 	
 	private static int handleStack(String s) {
