@@ -143,16 +143,6 @@ public class DCPU {
 			PC.value++;
 	}
 	
-	// Convert from unsigned encoded in two's complement to signed.
-	public short toSigned(int value) {
-		short result = (short)value;
-		if (value > Short.MAX_VALUE) {
-			// Value is negative (means left-most bit is set).
-			result = (short)-(~(char)(value - 1));
-		}
-		return result;
-	}
-	
 	private void processBasic(int opcode, Cell cellA, Cell cellB) {
 		int a = cellA.value;
 		int b = cellB.value;
