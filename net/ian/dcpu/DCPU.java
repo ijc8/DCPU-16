@@ -7,8 +7,11 @@ import java.util.Map;
 public class DCPU {
 	public Cell[] register;
 	public MemoryCell[] memory;
-	public Cell SP, PC, O;
-	public boolean running;
+	public Cell SP, PC, EX;
+	
+	public boolean running = false;
+	private boolean skipping = false;
+	
 	public int instructionCount = 0;
 	
 	public static final boolean debug = false;
@@ -33,7 +36,7 @@ public class DCPU {
 
 		SP = new Cell(0);
 		PC = new Cell(0);
-		O = new Cell(0);
+		EX = new Cell(0);
 		
 		devices = new ArrayList<Hardware>();
 	}
@@ -106,8 +109,8 @@ public class DCPU {
 			debug("PC");
 			return PC;
 		} else if (code == 0x1d) {
-			debug("O");
-			return O;
+			debug("EX");
+			return EX;
 		} else if (code == 0x1e) {
 			debug("[next word]");
 			return memory[memory[PC.value++].value];
@@ -142,163 +145,165 @@ public class DCPU {
 	private void processBasic(int opcode, Cell cellA, Cell cellB) {
 		int a = cellA.value;
 		int b = cellB.value;
-		int o = 0;
+		int ex = 0;
 		switch (opcode) {
-		case 0x1: // SET b to a
+		case 0x1: // SET - sets b to a
 			debugln("SET");
 			b = a;
 			break;
-		case 0x2: // ADD a to b
+		case 0x2: // ADD - add a to b
 			debugln("ADD");
-			o = (b += a) > 0xffff ? 1 : 0;
+			ex = (b += a) > 0xffff ? 1 : 0;
 			break;
-		case 0x3: // SUBTRACT a from b
+		case 0x3: // SUB - subtract from b
 			debugln("SUB");
-			o = (b -= a) < 0 ? 0xffff : 0;
+			ex = (b -= a) < 0 ? 0xffff : 0;
 			break;
-		case 0x4: // MUL multiplies b by a
+		case 0x4: // MUL - multiplies b by a
 			debugln("MUL");
-			o = (b *= a) >> 16 & 0xffff;
+			ex = (b *= a) >> 16 & 0xffff;
 			break;
-		case 0x5: // MLI multiplies signed values
+		case 0x5: // MLI - multiplies signed values
 			debugln("MLI");
 			b = (short)a * (short)b;
-			o = b >> 16 & 0xffff;
+			ex = b >> 16 & 0xffff;
 			break;
 		case 0x6: // DIV divides b by a
 			debugln("DIV");
 			if (a == 0) {
 				b = 0;
-				o = 0;
+				ex = 0;
 			} else {
-				o = (b << 16) / a;
+				ex = (b << 16) / a;
 				b /= a;
 			}
 			break;
-		case 0x7: // DVI divides signed values
+		case 0x7: // DVI - divides signed values
 			debugln("DVI");
 			if (a == 0) {
 				b = 0;
-				o = 0;
+				ex = 0;
 			} else {
-				o = ((short)b << 16) / (short)a;
+				ex = ((short)b << 16) / (short)a;
 				b = (short)b / (short)a;
 			}
 			break;
-		case 0x8: // MOD (sets b to b % a)
+		case 0x8: // MOD - (sets b to b % a)
 			debugln("MOD");
 			b = (a == 0) ? 0 : b % a;
 			break;
-		case 0x9: // MDI MOD with signed values
+		case 0x9: // MDI - MOD with signed values
 			debugln("MDI");
 			b = (a == 0) ? 0 : (short)b % (short)a;
-		case 0xa: // AND sets b to b & a
+		case 0xa: // AND - sets b to b & a
 			debugln("AND");
 			b &= a;
 			break;
-		case 0xb: // BOR sets b to b | a
+		case 0xb: // BOR - sets b to b | a
 			debugln("BOR");
 			b |= a;
 			break;
-		case 0xc: // XOR sets b to b ^ a
+		case 0xc: // XOR - sets b to b ^ a
 			debugln("XOR");
 			b ^= a;
 			break;
-		case 0xd: // SHR shifts b right by a (logical shift)
+		case 0xd: // SHR - shifts b right by a (logical shift)
 			debugln("SHR");
-			o = b << 16 >> a;
+			ex = b << 16 >> a;
 			b >>>= a;
 			break;
-		case 0xe: // ASR shift b right by a (arithmetic shift)
+		case 0xe: // ASR - shift b right by a (arithmetic shift)
 			debugln("ASR");
-			o = b << 16 >>> a;
+			ex = b << 16 >>> a;
 			b >>= a;
 			break;
-		case 0xf: // SHL shifts b left by a
+		case 0xf: // SHL - shifts b left by a
 			debugln("SHL");
-			o = b << a >> 16;
+			ex = b << a >> 16;
 			b = b << a;
 			break;
-		case 0x10: // IFB performs next instructions if (b & a) != 0
+		case 0x10: // IFB - performs next instructions if (b & a) != 0
 			debugln("IFB");
 			if ((b & a) == 0)
 				skipInstruction();
 			break;
-		case 0x11: // IFC performs next instructions if (b & a) == 0
+		case 0x11: // IFC - performs next instructions if (b & a) == 0
 			debugln("IFC");
 			if ((b & a) != 0)
 				skipInstruction();
-		case 0x12: // IFE performs next instruction if b == a
+		case 0x12: // IFE - performs next instruction if b == a
 			debugln("IFE");
 			if (b != a)
 				skipInstruction();
 			break;
-		case 0x13: // IFN performs next instruction if b != a
+		case 0x13: // IFN - performs next instruction if b != a
 			debugln("IFN");
 			if (b == a)
 				skipInstruction();
 			break;
-		case 0x14: // IFG performs next instruction if b > a
+		case 0x14: // IFG - performs next instruction if b > a
 			debugln("IFG");
 			if (b <= a)
 				skipInstruction();
 			break;
-		case 0x15: // IFA IFG with signed values
+		case 0x15: // IFA - IFG with signed values
 			debugln("IFA");
 			if ((short)b <= (short)a)
 				skipInstruction();
 			break;
-		case 0x16: // IFL performs next instruction if b < a
+		case 0x16: // IFL - performs next instruction if b < a
 			debugln("IFL");
 			if (b >= a)
 				skipInstruction();
 			break;
-		case 0x17: // IFU IFL with signed values
+		case 0x17: // IFU - IFL with signed values
 			debugln("IFU");
 			if ((short)b >= (short)a)
 				skipInstruction();
 			break;
-		case 0x1a: // ADX sets b to a+b+EX
+		case 0x1a: // ADX - sets b to b+a+EX
 			debugln("ADX");
-			o = (b += a + o) > 0xffff ? 1 : 0;
+			ex = (b += a + ex) > 0xffff ? 1 : 0;
 			break;
-		case 0x1b: // SBX sets b to b-a+EX
+		case 0x1b: // SBX - sets b to b-a+EX
 			debugln("SBX");
-			o = (b = b - a + o) < 0 ? 0xffff : 0;
+			ex = (b = b - a + ex) < 0 ? 0xffff : 0;
 			break;
-		case 0x1e: // STI sets b to a, then increments I and J
+		case 0x1e: // STI - sets b to a, then increments I and J
 			debugln("STI");
 			b = a;
 			getRegister(Register.I).value++;
 			getRegister(Register.J).value++;
 			break;
-		case 0x1f: // STD sets b to a, then decrements I and J
+		case 0x1f: // STD - sets b to a, then decrements I and J
 			debugln("STD");
 			b = a;
 			getRegister(Register.I).value--;
 			getRegister(Register.J).value--;
 			break;	
 		default:
-			debugln("Error: Unimplemented instruction: 0x" + Integer.toHexString(opcode));
+			debugln("Error: Unimplemented basic instruction: 0x" + Integer.toHexString(opcode));
 		}
 		cellA.set(a);
 		cellB.set(b);
-		O.set(o);
+		EX.set(ex);
 	}
 
 	private void processSpecial(int opcode, Cell a) {
 		switch (opcode) {
-		case 0x0: // EXIT custom code, makes the processor stop.
+		case 0x0: // EXIT - custom code, makes the processor stop.
+			// This is nice because what to do at an empty instruction is undefined, and
+			// this provides a clean end for simple programs that don't loop forever.
 			debugln("EXIT");
 			running = false;
 			break;
-		case 0x1: // JSR pushes the address of the next instruction to the stack, sets PC to a
+		case 0x1: // JSR - pushes the address of the next instruction to the stack, sets PC to a
 			debugln("JSR");
 			memory[--SP.value].value = PC.value;
 			PC.value = a.value;
 			break;
 		default:
-			debug("INVALID SPECIAL OPERATION: " + opcode);
+			debug("Error: Unimplemented special instruction: 0x" + Integer.toHexString(opcode));
 		}
 	}
 	

@@ -90,11 +90,11 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
         	}
         }
         
-        String specialNames[] = {"SP", "PC", "O"};
+        String specialNames[] = {"SP", "PC", "EX"};
         special = new Cell[3];
         special[0] = cpu.SP;
         special[1] = cpu.PC;
-        special[2] = cpu.O;
+        special[2] = cpu.EX;
         specialLabels = new JLabel[specialNames.length][];
 
         for (int i = 0; i < specialNames.length; i++) {
