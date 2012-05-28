@@ -228,6 +228,10 @@ public class DCPU {
 			if ((b & a) == 0)
 				skipInstruction();
 			break;
+		case 0x11: // IFC performs next instructions if (b & a) == 0
+			debugln("IFC");
+			if ((b & a) != 0)
+				skipInstruction();
 		case 0x12: // IFE performs next instruction if b == a
 			debugln("IFE");
 			if (b != a)
@@ -241,6 +245,21 @@ public class DCPU {
 		case 0x14: // IFG performs next instruction if b > a
 			debugln("IFG");
 			if (b <= a)
+				skipInstruction();
+			break;
+		case 0x15: // IFA IFG with signed values
+			debugln("IFA");
+			if ((short)b <= (short)a)
+				skipInstruction();
+			break;
+		case 0x16: // IFL performs next instruction if b < a
+			debugln("IFL");
+			if (b >= a)
+				skipInstruction();
+			break;
+		case 0x17: // IFU IFL with signed values
+			debugln("IFU");
+			if ((short)b >= (short)a)
 				skipInstruction();
 			break;
 		default:
