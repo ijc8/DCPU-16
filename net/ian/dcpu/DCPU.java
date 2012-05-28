@@ -79,10 +79,6 @@ public class DCPU {
 		return register[r.ordinal()];
 	}
 	
-	public void setRegister(Register r, char value) {
-		register[r.ordinal()].value = value;
-	}
-	
 	private Cell handleArgument(int code, boolean isA) {
 		debugf("0x%s: ", Integer.toHexString(code));
 		if (code >= 0x0 && code <= 0x7) {
@@ -175,7 +171,7 @@ public class DCPU {
 				b = 0;
 				o = 0;
 			} else {
-				o = (char)((b << 16) / a);
+				o = (b << 16) / a;
 				b /= a;
 			}
 			break;
@@ -210,17 +206,17 @@ public class DCPU {
 			break;
 		case 0xd: // SHR shifts b right by a (logical shift)
 			debugln("SHR");
-			o = (char)(b << 16 >> a);
+			o = b << 16 >> a;
 			b >>>= a;
 			break;
 		case 0xe: // ASR shift b right by a (arithmetic shift)
 			debugln("ASR");
-			o = (char)(b << 16 >>> a);
+			o = b << 16 >>> a;
 			b >>= a;
 			break;
 		case 0xf: // SHL shifts b left by a
 			debugln("SHL");
-			o = (char)(b << a >> 16);
+			o = b << a >> 16;
 			b = b << a;
 			break;
 		case 0x10: // IFB performs next instructions if (b & a) != 0
@@ -262,6 +258,26 @@ public class DCPU {
 			if ((short)b >= (short)a)
 				skipInstruction();
 			break;
+		case 0x1a: // ADX sets b to a+b+EX
+			debugln("ADX");
+			o = (b += a + o) > 0xffff ? 1 : 0;
+			break;
+		case 0x1b: // SBX sets b to b-a+EX
+			debugln("SBX");
+			o = (b = b - a + o) < 0 ? 0xffff : 0;
+			break;
+		case 0x1e: // STI sets b to a, then increments I and J
+			debugln("STI");
+			b = a;
+			getRegister(Register.I).value++;
+			getRegister(Register.J).value++;
+			break;
+		case 0x1f: // STD sets b to a, then decrements I and J
+			debugln("STD");
+			b = a;
+			getRegister(Register.I).value--;
+			getRegister(Register.J).value--;
+			break;	
 		default:
 			debugln("Error: Unimplemented instruction: 0x" + Integer.toHexString(opcode));
 		}
