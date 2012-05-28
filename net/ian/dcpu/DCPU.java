@@ -3,6 +3,7 @@ package net.ian.dcpu;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 public class DCPU {
 	public Cell[] register;
@@ -121,25 +122,6 @@ public class DCPU {
 		// Only should happen if argument is A.
 		debug("literal: " + (code - 0x21));
 		return new Cell(code - 0x21);
-	}
-	
-	private void skipInstruction() {
-		// This skips to the end of the next instruction - used in IF operations.
-		int instruction = memory[PC.value++].value;
-		int a, b = -1;
-		if ((instruction & 0b11111) == 0) {
-			// Non-basic opcode. aaaaaaooooo00000
-			a = instruction >> 10 & 0b111111;
-		} else {
-			// Basic opcode. aaaaaabbbbbooooo
-			a = instruction >> 10 & 0b111111;
-			b = instruction >>  5 & 0b11111;
-		}
-		
-		if ((a >= 0x10 && a <= 0x17) || a == 0x1e || a == 0x1f)
-			PC.value++;
-		if ((b >= 0x10 && b <= 0x17) || b == 0x1e || b == 0x1f)
-			PC.value++;
 	}
 	
 	private void processBasic(int opcode, Cell cellA, Cell cellB) {
@@ -344,5 +326,28 @@ public class DCPU {
 			processSpecial(opcode, a);
 		
 		instructionCount++;
+	}
+	
+	public void run() {
+		running = true;
+		while (running)
+			cycle();
+	}
+	
+	public String dump() {
+		String s = "";
+		for (Register r : Register.values())
+			s += r.toString() + ": " + Integer.toHexString(getRegister(r).value) + "\n";
+		return s;
+	}
+	
+	public static void main(String args[]) {
+		Scanner s = new Scanner(System.in);
+		List<Integer> code = new ArrayList<>();
+		while (s.hasNextInt(16))
+			code.add(s.nextInt(16));
+		DCPU cpu = new DCPU(code);
+		cpu.run();
+		System.out.print(cpu.dump());
 	}
 }

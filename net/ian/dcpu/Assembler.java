@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 public class Assembler {
 	// Blanks correspond to unspecified operations.
@@ -343,5 +344,12 @@ public class Assembler {
 	
 	public static int compile(int op, int arg) {
 		return compile(op, arg, -1);
+	}
+	
+	public static void main(String args[]) {
+		String input = new Scanner(System.in).useDelimiter("\\A").next();
+		Assembler as = new Assembler();
+		for (int word : as.assemble(input))
+			System.out.println(Integer.toHexString(word));
 	}
 }
