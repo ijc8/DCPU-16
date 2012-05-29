@@ -28,8 +28,8 @@ public class DCPU {
 	}
 
 	public DCPU(char[] mem) {
-		register = new Cell[11];
-		for (int i = 0; i < 11; i++)
+		register = new Cell[Register.values().length];
+		for (int i = 0; i < Register.values().length; i++)
 			register[i] = new Cell(0);
 		memory = new MemoryCell[0x10000]; // 0x10000 words in size
 		for (int i = 0; i < 0x10000; i++)
@@ -44,6 +44,25 @@ public class DCPU {
 	
 	public DCPU(List<Character> mem) {
 		this(unboxArray(mem));
+	}
+	
+	// Code duplication... :/
+	public void clear(char[] mem) {
+		for (int i = 0; i < Register.values().length; i++)
+			register[i].value = 0;
+		
+		for (int i = 0; i < 0x10000; i++)
+			memory[i].value = i < mem.length ? mem[i] : 0;
+			
+		SP.value = 0;
+		PC.value = 0;
+		EX.value = 0;
+		
+		instructionCount = 0;
+	}
+	
+	public void clear(List<Character> mem) {
+		clear(unboxArray(mem));
 	}
 	
 	public void setMemory(List<Character> listMem) {

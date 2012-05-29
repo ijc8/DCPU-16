@@ -16,6 +16,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	private static final long serialVersionUID = 1L;
 	
 	DCPU cpu;
+	Keyboard keyboard;
 	Monitor monitor;
 	MonitorPanel display;
 	
@@ -33,6 +34,9 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	public DCPULauncher() {
 		super();
 		cpu = new DCPU();
+		keyboard = new Keyboard(cpu);
+		monitor = new Monitor(cpu);
+		
 		assembler = new Assembler();
 	}
 	
@@ -49,9 +53,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
         codeEntry.setFont(new Font("Monospaced", Font.BOLD, 16));
         JScrollPane codeScroll = new JScrollPane(codeEntry);
         frame.add(codeScroll);
-
-        Keyboard keyboard = new Keyboard(cpu);
-        monitor = new Monitor(cpu);
+       
         display = new MonitorPanel(monitor);
         display.addKeyListener(keyboard);
         output.add(display, BorderLayout.NORTH);
@@ -130,17 +132,22 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
 		if (command.equals("run")) {
-			cpu.setMemory(assembler.assemble(codeEntry.getText()));
-			reverseLabels();
-			cpu.PC.value = 0;
-			cpu.running = true;
+			cpu.clear(assembler.assemble(codeEntry.getText()));
+			cpu.labels = reverseLabels();
+			
+			monitor = new Monitor(cpu);
+			display.monitor = monitor;
+			
 			new Thread(display).start();
 			new Thread(this).start();
 		} else if (command.equals("step")) {
 			if (!started) {
-				cpu.setMemory(assembler.assemble(codeEntry.getText()));
-				reverseLabels();
-				cpu.PC.value = 0;
+				cpu.clear(assembler.assemble(codeEntry.getText()));
+				cpu.labels = reverseLabels();
+				
+				monitor = new Monitor(cpu);
+				display.monitor = monitor;
+				
 				started = true;
 				cpu.running = true;
 			}
@@ -150,12 +157,12 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 			cpu.running = false;
 	}
 	
-	private void reverseLabels() {
+	private Map<Integer, String> reverseLabels() {
 		Map<String, Integer> labels = assembler.labels;
 		Map<Integer, String> reversed = new HashMap<>();
 		for (Map.Entry<String, Integer> pair : labels.entrySet())
 			reversed.put(pair.getValue(), pair.getKey());
-		cpu.labels = reversed;
+		return reversed;
 	}
 	
 	public void run() {
