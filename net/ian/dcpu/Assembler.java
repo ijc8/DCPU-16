@@ -88,7 +88,7 @@ public class Assembler {
 				String[] tmp = line.split("\\s+", 2);
 				String label = tmp[0].substring(1).toUpperCase();
 				if (labels.containsKey(label))
-					System.out.println("ERROR: Label " + label + " defined twice!");
+					System.err.println("Error: Label " + label + " defined twice!");
 				else
 					labels.put(label, instructions.size());
 				if (tmp.length < 2)
@@ -184,12 +184,12 @@ public class Assembler {
 		for (Map.Entry<Integer, String> entry : fixes.entrySet()) {
 			int index = entry.getKey();
 			String label = entry.getValue();
-			System.out.printf("Fixing: %s at %d\n", label, index);
+			System.err.printf("Fixing: %s at %d\n", label, index);
 			Integer loc;
 			if ((loc = labels.get(label)) != null) {
 				instructions.set(index, (char)(int)loc);
 			} else
-				System.out.printf("Error: True assembly error (in insertLabels): %s at %d\n", label, index);
+				System.err.printf("Error: True assembly error (in insertLabels): %s at %d\n", label, index);
 		}
 	}
 	
@@ -198,7 +198,7 @@ public class Assembler {
 		boolean isBasic = (sArg2 != null);
 		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp) + 1;
 		if (op < 1)
-			System.out.println("Broken OP! \"" + sOp + "\" isBasic = " + isBasic);
+			System.err.println("Broken OP! \"" + sOp + "\" isBasic = " + isBasic);
 		int a, b = -1;
 		int instructionCount = instructions.size();
 		
@@ -267,7 +267,7 @@ public class Assembler {
 		
 		if (arg.startsWith("[")) {
 			if (!arg.endsWith("]")) {
-				System.out.println("Error: No closing square bracket.");
+				System.err.println("Error: No closing square bracket.");
 				return null;
 			}
 			arg = arg.substring(1, arg.length() - 1);

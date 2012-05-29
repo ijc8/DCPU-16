@@ -63,17 +63,17 @@ public class DCPU {
 	
 	private void debug(Object o) {
 		if (debug)
-			System.out.print(o);
+			System.err.print(o);
 	}
 	
 	private void debugln(Object o) {
 		if (debug)
-			System.out.println(o);
+			System.err.println(o);
 	}
 	
 	private void debugf(String s, Object... o) {
 		if (debug)
-			System.out.printf(s, o);
+			System.err.printf(s, o);
 	}
 	
 	public void attachDevice(Hardware h) {
@@ -263,7 +263,7 @@ public class DCPU {
 	@SuppressWarnings("unused")
 	public void cycle() {
 		if (debug && labels != null && labels.containsKey(PC.value)) {
-			System.out.println(labels.get(PC.value));
+			System.err.println(labels.get(PC.value));
 		}
 		
 		int instruction = memory[PC.value].value;

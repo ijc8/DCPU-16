@@ -20,7 +20,7 @@ public class Keyboard extends Hardware implements KeyListener {
 	public void keyPressed(KeyEvent e) {
 		if (e.isActionKey()) {
 			addKey(e.getKeyCode());
-			System.out.printf("Key press: %d = <ACTION>\n", e.getKeyCode());
+			System.err.printf("Key press: %d = <ACTION>\n", e.getKeyCode());
 		}
 	}
 
@@ -29,7 +29,7 @@ public class Keyboard extends Hardware implements KeyListener {
 	public void keyTyped(KeyEvent e) {
 		if (e.getKeyChar() >= 0x20 && e.getKeyChar() < 0x7f) {
 			addKey(e.getKeyChar());
-			System.out.printf("Key press: %d = %c\n", e.getKeyChar(), (char)e.getKeyChar());
+			System.err.printf("Key press: %d = %c\n", (int)e.getKeyChar(), e.getKeyChar());
 		}
 	}
 }
