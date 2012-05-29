@@ -135,9 +135,6 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 			cpu.clear(assembler.assemble(codeEntry.getText()));
 			cpu.labels = reverseLabels();
 			
-			monitor = new Monitor(cpu);
-			display.monitor = monitor;
-			
 			new Thread(display).start();
 			new Thread(this).start();
 		} else if (command.equals("step")) {

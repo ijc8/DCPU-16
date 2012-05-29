@@ -9,6 +9,10 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 public class Monitor extends Hardware {
+	public static final int ID = 0x7349f615;
+	public static final int VERSION = 0x1802;
+	public static final int MANUFACTURER = 0x1c6c8b36;
+	
 	public static final int COLUMNS = 32;
 	public static final int ROWS = 12;
 	
@@ -45,7 +49,8 @@ public class Monitor extends Hardware {
 	}
 	
 	public Monitor(DCPU cpu) {
-        
+        super(ID, VERSION, MANUFACTURER);
+		
         screen = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
         this.cpu = cpu;
         
@@ -58,7 +63,7 @@ public class Monitor extends Hardware {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-        
+                
         cpu.attachDevice(this);
         
     }

@@ -1,7 +1,16 @@
 package net.ian.dcpu;
 
-// Maybe the name should be "MemoryListener"?
 public class Hardware {
+	public final int id;
+	public final int version;
+	public final int manufacturer;
+	
+	public Hardware(int id, int version, int manufacturer) {
+		this.id = id;
+		this.version = version;
+		this.manufacturer = manufacturer;
+	}
+	
 	public boolean inMemoryRange(char loc) {
 		return false;
 	}

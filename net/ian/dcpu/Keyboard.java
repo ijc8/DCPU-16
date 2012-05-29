@@ -4,10 +4,16 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 public class Keyboard extends Hardware implements KeyListener {
+	public static final int ID = 0x30cf7406;
+	public static final int VERSION = 1;
+	
 	DCPU cpu;
 	
 	public Keyboard(DCPU cpu) {
+        super(ID, VERSION, 0xB65100);
+		
 		this.cpu = cpu;
+		cpu.attachDevice(this);		
 	}
 	
 	private void addKey(int key) {

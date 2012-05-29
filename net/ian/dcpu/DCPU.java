@@ -259,7 +259,9 @@ public class DCPU {
 		EX.set(ex);
 	}
 
-	private void processSpecial(int opcode, Cell a) {
+	private void processSpecial(int opcode, Cell cellA) {
+		int a = cellA.value;
+		
 		if (opcode > 0 && (opcode - 1) < Assembler.specialOps.length)
 			debugln(Assembler.specialOps[opcode - 1]);
 		
@@ -272,11 +274,24 @@ public class DCPU {
 			break;
 		case 0x1: // JSR - pushes the address of the next instruction to the stack, sets PC to a
 			memory[--SP.value].value = PC.value;
-			PC.value = a.value;
+			PC.value = (char)a;
+			break;
+		case 0x10: // HWN - sets a to number of connected devices
+			a = devices.size();
+			break;
+		case 0x11: // HWQ - sets A, B, C, X, and Y to info about hardware a
+			Hardware h = devices.get(a);
+			getRegister(Register.A).value = (char)h.id;
+			getRegister(Register.B).value = (char)(h.id >> 16);
+			getRegister(Register.C).value = (char)h.version;
+			getRegister(Register.X).value = (char)h.manufacturer;
+			getRegister(Register.Y).value = (char)(h.manufacturer >> 16);
 			break;
 		default:
 			debug("Error: Unimplemented special instruction: 0x" + Integer.toHexString(opcode));
 		}
+		
+		cellA.set(a);
 	}
 	
 	@SuppressWarnings("unused")
