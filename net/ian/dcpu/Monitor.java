@@ -8,7 +8,7 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-public class Monitor implements Hardware {
+public class Monitor extends Hardware {
 	public static final int COLUMNS = 32;
 	public static final int ROWS = 12;
 	
@@ -183,9 +183,6 @@ public class Monitor implements Hardware {
 			borderColor = convertColor(value);
 		shouldRender = true;
 	}
-
-	@Override
-	public void onGet(char location, char value) {}
 	
 	@Override
 	public boolean inMemoryRange(char loc) {
