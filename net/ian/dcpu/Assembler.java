@@ -9,6 +9,7 @@ import java.util.Scanner;
 
 public class Assembler {
 	// Blanks correspond to unspecified operations.
+	// Should probably move this elsewhere.
 	public static final String[] basicOps = {
 		"SET", "ADD", "SUB", "MUL", "MLI", "DIV", "DVI", "MOD",
 		"MDI", "AND", "BOR", "XOR", "SHR", "ASR", "SHL", "IFB",
@@ -195,8 +196,8 @@ public class Assembler {
 	public List<Character> assemble(String sOp, String sArg1, String sArg2) {
 		sOp = sOp.toUpperCase();
 		boolean isBasic = (sArg2 != null);
-		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp) + (isBasic ? 1 : 0);
-		if (op == -1)
+		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp) + 1;
+		if (op < 1)
 			System.out.println("Broken OP! \"" + sOp + "\" isBasic = " + isBasic);
 		int a, b = -1;
 		int instructionCount = instructions.size();
@@ -350,10 +351,10 @@ public class Assembler {
 	public static char compile(int op, int a, int b) {
 		boolean isBasic = (b != -1);
 		
-		String sOp = String.format("%05d", Integer.parseInt(Integer.toBinaryString(op))) + (isBasic ? "" : "00000");
+		String sOp = String.format("%05d", Integer.parseInt(Integer.toBinaryString(op)));
 		String sA = String.format("%06d", Integer.parseInt(Integer.toBinaryString(a)));
 		String sB = isBasic ? String.format("%05d", Integer.parseInt(Integer.toBinaryString(b))) : "";
-				
+		
 		return (char)Integer.parseInt(sA + sB + sOp + (isBasic ? "" : "00000"), 2);
 	}
 	

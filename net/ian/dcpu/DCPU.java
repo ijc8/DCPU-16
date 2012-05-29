@@ -128,30 +128,28 @@ public class DCPU {
 		int a = cellA.value;
 		int b = cellB.value;
 		int ex = 0;
+		
+		if ((opcode - 1) < Assembler.basicOps.length)
+			debugln(Assembler.basicOps[opcode - 1]);
+		
 		switch (opcode) {
 		case 0x1: // SET - sets b to a
-			debugln("SET");
 			b = a;
 			break;
 		case 0x2: // ADD - add a to b
-			debugln("ADD");
 			ex = (b += a) > 0xffff ? 1 : 0;
 			break;
 		case 0x3: // SUB - subtract from b
-			debugln("SUB");
 			ex = (b -= a) < 0 ? 0xffff : 0;
 			break;
 		case 0x4: // MUL - multiplies b by a
-			debugln("MUL");
 			ex = (b *= a) >> 16 & 0xffff;
 			break;
 		case 0x5: // MLI - multiplies signed values
-			debugln("MLI");
 			b = (short)a * (short)b;
 			ex = b >> 16 & 0xffff;
 			break;
 		case 0x6: // DIV divides b by a
-			debugln("DIV");
 			if (a == 0) {
 				b = 0;
 				ex = 0;
@@ -161,7 +159,6 @@ public class DCPU {
 			}
 			break;
 		case 0x7: // DVI - divides signed values
-			debugln("DVI");
 			if (a == 0) {
 				b = 0;
 				ex = 0;
@@ -171,86 +168,66 @@ public class DCPU {
 			}
 			break;
 		case 0x8: // MOD - (sets b to b % a)
-			debugln("MOD");
 			b = (a == 0) ? 0 : b % a;
 			break;
 		case 0x9: // MDI - MOD with signed values
-			debugln("MDI");
 			b = (a == 0) ? 0 : (short)b % (short)a;
 		case 0xa: // AND - sets b to b & a
-			debugln("AND");
 			b &= a;
 			break;
 		case 0xb: // BOR - sets b to b | a
-			debugln("BOR");
 			b |= a;
 			break;
 		case 0xc: // XOR - sets b to b ^ a
-			debugln("XOR");
 			b ^= a;
 			break;
 		case 0xd: // SHR - shifts b right by a (logical shift)
-			debugln("SHR");
 			ex = b << 16 >> a;
 			b >>>= a;
 			break;
 		case 0xe: // ASR - shift b right by a (arithmetic shift)
-			debugln("ASR");
 			ex = b << 16 >>> a;
 			b >>= a;
 			break;
 		case 0xf: // SHL - shifts b left by a
-			debugln("SHL");
 			ex = b << a >> 16;
 			b = b << a;
 			break;
 		case 0x10: // IFB - performs next instruction if (b & a) != 0
-			debugln("IFB");
 			skipping = (b & a) == 0;
 			break;
 		case 0x11: // IFC - performs next instruction if (b & a) == 0
-			debugln("IFC");
 			skipping = (b & a) != 0;
 		case 0x12: // IFE - performs next instruction if b == a
-			debugln("IFE");
 			skipping = b != a;
 			break;
 		case 0x13: // IFN - performs next instruction if b != a
-			debugln("IFN");
 			skipping = b == a;
 			break;
 		case 0x14: // IFG - performs next instruction if b > a
-			debugln("IFG");
 			skipping = b <= a;
 			break;
 		case 0x15: // IFA - IFG with signed values
-			debugln("IFA");
 			skipping = (short)b <= (short)a;
 			break;
 		case 0x16: // IFL - performs next instruction if b < a
-			debugln("IFL");
 			skipping = b >= a;
 			break;
 		case 0x17: // IFU - IFL with signed values
-			debugln("IFU");
 			skipping = (short)b >= (short)a; 
 			break;
 		case 0x1a: // ADX - sets b to b+a+EX
-			debugln("ADX");
 			ex = (b += a + ex) > 0xffff ? 1 : 0;
 			break;
 		case 0x1b: // SBX - sets b to b-a+EX
-			debugln("SBX");
 			ex = (b = b - a + ex) < 0 ? 0xffff : 0;
 			break;
 		case 0x1e: // STI - sets b to a, then increments I and J
-			debugln("STI");
 			b = a;
 			getRegister(Register.I).value++;
 			getRegister(Register.J).value++;
 			break;
 		case 0x1f: // STD - sets b to a, then decrements I and J
-			debugln("STD");
 			b = a;
 			getRegister(Register.I).value--;
 			getRegister(Register.J).value--;
@@ -264,6 +241,9 @@ public class DCPU {
 	}
 
 	private void processSpecial(int opcode, Cell a) {
+		if (opcode > 0 && (opcode - 1) < Assembler.specialOps.length)
+			debugln(Assembler.specialOps[opcode - 1]);
+		
 		switch (opcode) {
 		case 0x0: // EXIT - custom code, makes the processor stop.
 			// This is nice because what to do at an empty instruction is undefined, and
@@ -272,7 +252,6 @@ public class DCPU {
 			running = false;
 			break;
 		case 0x1: // JSR - pushes the address of the next instruction to the stack, sets PC to a
-			debugln("JSR");
 			memory[--SP.value].value = PC.value;
 			PC.value = a.value;
 			break;
@@ -289,13 +268,13 @@ public class DCPU {
 		
 		int instruction = memory[PC.value].value;
 		int opcode = 0;
-		int rawA, rawB = -1;
+		int rawA = 0, rawB = -1;
 		if ((instruction & 0b11111) == 0 && !skipping) {
 			// Non-basic opcode. aaaaaaooooo00000
 			instruction >>= 5;
 			opcode = instruction & 0b11111;
-			rawA = instruction >> 6 & 0b111111;
-		} else {
+			rawA = instruction >> 5 & 0b111111;
+		} else if (!skipping) {
 			// Basic opcode. aaaaaabbbbbooooo
 			opcode = instruction & 0b11111;
 			rawA = instruction >> 10 & 0b111111;
