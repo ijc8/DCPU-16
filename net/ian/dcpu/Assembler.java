@@ -205,7 +205,7 @@ public class Assembler {
 		if (isBasic)
 			sArg2 = sArg2.toUpperCase();
 		
-		Argument argA = handleArgument(sArg1);
+		Argument argA = handleArgument(isBasic ? sArg2 : sArg1);
 		List<Character> codeA = argA.code;
 		instructionCount += codeA.size() - 1;
 		
@@ -217,7 +217,7 @@ public class Assembler {
 		Argument argB = null;
 		List<Character> codeB = null;
 		if (isBasic) {
-			argB = handleArgument(sArg2);
+			argB = handleArgument(sArg1);
 			codeB = argB.code;
 			instructionCount += codeB.size() - 1;
 			if (argB.label != null)
@@ -226,7 +226,7 @@ public class Assembler {
 		}
 		
 		List<Character> words = new ArrayList<>();
-		words.add(compile(op, b, a));
+		words.add(compile(op, a, b));
 		words.addAll(codeA.subList(1, codeA.size()));
 		if (argB != null)
 			words.addAll(codeB.subList(1, codeB.size()));

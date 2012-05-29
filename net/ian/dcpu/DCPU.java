@@ -15,7 +15,7 @@ public class DCPU {
 	
 	public int instructionCount = 0;
 	
-	public static final boolean debug = false;
+	public static final boolean debug = true;
 	
 	public Map<Integer, String> labels;
 	

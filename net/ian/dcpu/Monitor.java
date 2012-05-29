@@ -1,46 +1,34 @@
 package net.ian.dcpu;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
-import javax.swing.JPanel;
 
-public class Monitor extends JPanel implements Hardware, MouseListener, Runnable {
-	private static final long serialVersionUID = 1L;
-	
+public class Monitor implements Hardware {
 	public static final int COLUMNS = 32;
 	public static final int ROWS = 12;
 	
 	public static final int CHAR_WIDTH = 4;
 	public static final int CHAR_HEIGHT = 8;
 	
-	public static final int BORDER = 12;
-	public static final int SCALE = 4;
+	public static final int BORDER = 12;	
+	public static final int WIDTH = COLUMNS * CHAR_WIDTH + BORDER * 2;
+	public static final int HEIGHT = ROWS * CHAR_HEIGHT + BORDER * 2;
 	
-	public static final int WIDTH = COLUMNS * CHAR_WIDTH * SCALE + BORDER * SCALE * 2;
-	public static final int HEIGHT = ROWS * CHAR_HEIGHT * SCALE + BORDER * SCALE * 2;
-	
-	private BufferedImage screen;
+	public BufferedImage screen;
 	
 	public BufferedImage font[];
 	public MonitorCell cells[];
 	
 	public Color borderColor = Color.BLACK;
-	
-	private AffineTransformOp scaler;
-	
+		
 	DCPU cpu;
 
-	private boolean shouldRender;
+	public boolean shouldRender;
 	
 	public static class MonitorCell {
 		char character;
@@ -57,9 +45,6 @@ public class Monitor extends JPanel implements Hardware, MouseListener, Runnable
 	}
 	
 	public Monitor(DCPU cpu) {
-        setPreferredSize(new Dimension(WIDTH, HEIGHT));
-        setMinimumSize(new Dimension(WIDTH, HEIGHT));
-        setMaximumSize(new Dimension(WIDTH, HEIGHT));
         
         screen = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
         this.cpu = cpu;
@@ -76,13 +61,7 @@ public class Monitor extends JPanel implements Hardware, MouseListener, Runnable
         
         cpu.attachDevice(this);
         
-        AffineTransform scale = new AffineTransform();
-        scale.scale(SCALE, SCALE);
-        scaler = new AffineTransformOp(scale, null);
-        
-        setFocusable(true);
-        addMouseListener(this);
-	}
+    }
 	
 	public static Color convertColor(int colorBits) {
 		boolean h = (colorBits >> 3 & 1) == 1;
@@ -162,27 +141,6 @@ public class Monitor extends JPanel implements Hardware, MouseListener, Runnable
 		return img2;
 	}
 	
-	public void run() {
-		while (cpu.running) {
-			if (System.currentTimeMillis() % 100 == 0) {
-				for (int x = 0; x < COLUMNS; x++) {
-					for (int y = 0; y < ROWS; y++) {
-						MonitorCell cell = cells[y * 32 + x];
-						if (cell.blink) {
-							shouldRender = true;
-							cell.show = !cell.show;
-						}
-					}
-				}
-			}
-			
-			if (shouldRender) {
-				render();
-				shouldRender = false;
-			}
-		}
-	}
-	
 	public void render() {
 		Graphics2D g = screen.createGraphics();
 		
@@ -193,17 +151,16 @@ public class Monitor extends JPanel implements Hardware, MouseListener, Runnable
 				MonitorCell cell = cells[y * 32 + x];
 				if (!cell.show) {
 					g.setColor(Color.BLACK);
-					g.fillRect(x * 4 * SCALE + BORDER * SCALE, y * 8 * SCALE + BORDER * SCALE, 4 * SCALE, 8 * SCALE);
+					g.fillRect(x * 4 + BORDER, y * 8 + BORDER, 4, 8);
 				} else if (cell.fgColor.equals(cell.bgColor)) {
 					g.setColor(cell.bgColor);
-					g.fillRect(x * 4 * SCALE + BORDER * SCALE, y * 8 * SCALE + BORDER * SCALE, 4 * SCALE, 8 * SCALE);
+					g.fillRect(x * 4 + BORDER, y * 8 + BORDER, 4, 8);
 				} else
-					g.drawImage(replaceColor(font[cell.character], cell.fgColor, cell.bgColor), scaler, x * 4 * SCALE + BORDER * SCALE, y * 8 * SCALE + BORDER * SCALE);
+					g.drawImage(replaceColor(font[cell.character], cell.fgColor, cell.bgColor), x * 4 + BORDER, y * 8 + BORDER, null);
 			}
 		}
 		
 		g.dispose();
-		getGraphics().drawImage(screen, 0, 0, null);
 	}
 	
 	public void paint(Graphics g) {
@@ -234,21 +191,26 @@ public class Monitor extends JPanel implements Hardware, MouseListener, Runnable
 	public boolean inMemoryRange(char loc) {
 		return loc >= 0x8000 && loc <= 0x8280;
 	}
-
-	@Override
-	public void mouseClicked(MouseEvent e) {
-		requestFocus();
+	
+	// Returns whether the screen was updated.
+	public boolean tick() {
+		if (System.currentTimeMillis() % 100 == 0) {
+			for (int x = 0; x < COLUMNS; x++) {
+				for (int y = 0; y < ROWS; y++) {
+					MonitorCell cell = cells[y * 32 + x];
+					if (cell.blink) {
+						shouldRender = true;
+						cell.show = !cell.show;
+					}
+				}
+			}
+		}
+		
+		if (shouldRender) {
+			render();
+			shouldRender = false;
+			return true;
+		}
+		return false;
 	}
-
-	@Override
-	public void mouseEntered(MouseEvent e) {}
-
-	@Override
-	public void mouseExited(MouseEvent e) {}
-
-	@Override
-	public void mousePressed(MouseEvent e) {}
-
-	@Override
-	public void mouseReleased(MouseEvent e) {}
 }
