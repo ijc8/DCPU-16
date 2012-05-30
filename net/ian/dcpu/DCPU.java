@@ -287,6 +287,8 @@ public class DCPU {
 			getRegister(Register.X).value = (char)h.manufacturer;
 			getRegister(Register.Y).value = (char)(h.manufacturer >> 16);
 			break;
+		case 0x12: // HWI - send an interrupt to hardware a
+			devices.get(a).interrupt();
 		default:
 			debug("Error: Unimplemented special instruction: 0x" + Integer.toHexString(opcode));
 		}

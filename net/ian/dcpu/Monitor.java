@@ -8,6 +8,8 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import net.ian.dcpu.DCPU.Register;
+
 public class Monitor extends Hardware {
 	public static final int ID = 0x7349f615;
 	public static final int VERSION = 0x1802;
@@ -30,7 +32,8 @@ public class Monitor extends Hardware {
 	
 	public Color borderColor = Color.BLACK;
 		
-	DCPU cpu;
+	private DCPU cpu;
+	private char memStart, fontStart;
 
 	public boolean shouldRender;
 	
@@ -58,11 +61,7 @@ public class Monitor extends Hardware {
         for (int i = 0; i < 32 * 12; i++)
         	cells[i] = new MonitorCell((char)0, Color.BLACK, Color.BLACK, false);
         
-        try {
-			loadFont(cpu);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		font = loadDefaultFont();
                 
         cpu.attachDevice(this);
         
@@ -94,22 +93,32 @@ public class Monitor extends Hardware {
 		}
 	}
 	
-	public void loadFont(DCPU cpu) throws IOException {
-		BufferedImage img = ImageIO.read(DCPU.class.getResource("/net/ian/dcpu/res/font.png"));	
+	public BufferedImage[] loadDefaultFont() {
+		BufferedImage img;
+		try {
+		img = ImageIO.read(DCPU.class.getResource("/net/ian/dcpu/res/font.png"));
+		} catch (IOException e){
+			e.printStackTrace();
+			return null;
+		}
 		BufferedImage img2 = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_BYTE_BINARY);
 		Graphics2D g = img2.createGraphics();
 		g.drawImage(img, 0, 0, null);
 		g.dispose();
 				
-		font = new BufferedImage[img2.getWidth() / 4 * (img2.getHeight() / 8)];
+		BufferedImage[] defaultFont = new BufferedImage[img2.getWidth() / 4 * (img2.getHeight() / 8)];
 		
 		for (int x = 0; x < img2.getWidth() / 4; x++) {
 			for (int y = 0; y < img2.getHeight() / 8; y++) {
-				font[y * 32 + x] = img2.getSubimage(x * 4, y * 8, 4, 8);
+				defaultFont[y * 32 + x] = img2.getSubimage(x * 4, y * 8, 4, 8);
 			}
 		}
 		
-		// Stick the default font in DCPU memory.
+		return defaultFont;
+	}
+	
+	public void dumpFont(char start, BufferedImage[] font) {
+		// Stick a font in DCPU memory. For use with MEM_DUMP_FONT.
 		for (int i = 0; i < font.length; i++) {
 			int word = 0;
 			for (int x = 0; x < font[i].getWidth(); x++) {
@@ -118,8 +127,8 @@ public class Monitor extends Hardware {
 						word |= 1 << ((3 - x) * 8 + y);
 					char word2 = (char)(word & 0xffff);
 					char word1 = (char)(word >> 16);
-					cpu.memory[0x8180 + (i * 2)].value = word1;
-					cpu.memory[0x8180 + (i * 2) + 1].value = word2;
+					cpu.memory[start + (i * 2)].value = word1;
+					cpu.memory[start + (i * 2) + 1].value = word2;
 				}
 			}
 		}
@@ -144,6 +153,28 @@ public class Monitor extends Hardware {
 			}
 		}
 		return img2;
+	}
+	
+	// Returns whether the screen was updated.
+	public boolean tick() {
+		if (System.currentTimeMillis() % 100 == 0) {
+			for (int x = 0; x < COLUMNS; x++) {
+				for (int y = 0; y < ROWS; y++) {
+					MonitorCell cell = cells[y * 32 + x];
+					if (cell.blink) {
+						shouldRender = true;
+						cell.show = !cell.show;
+					}
+				}
+			}
+		}
+		
+		if (shouldRender) {
+			render();
+			shouldRender = false;
+			return true;
+		}
+		return false;
 	}
 	
 	public void render() {
@@ -174,45 +205,64 @@ public class Monitor extends Hardware {
 
 	@Override
 	public void onSet(char location, char value) {
-		if (location < 0x8180) {
-    		MonitorCell cell = cells[location - 0x8000];
+		if (location < (memStart + 0x180)) {
+    		MonitorCell cell = cells[location - memStart];
     		cell.character = (char)(value & 127);
     		cell.fgColor = Monitor.convertColor(value >> 12);
     		cell.bgColor = Monitor.convertColor(value >> 8);
     		cell.blink = (value >> 7 & 1) == 1;
     		cell.show = true;
-		} else if (location < 0x8280) {
-			// BUILD HALF A FONT
-			buildFont(location - 0x8180, value);
-		} else if (location == 0x8280)
-			borderColor = convertColor(value);
+		} else if (fontStart != 0 && location < (fontStart + 0x280)) {
+			// Builds half a font
+			buildFont(location - fontStart, value);
+		}
 		shouldRender = true;
 	}
 	
 	@Override
 	public boolean inMemoryRange(char loc) {
-		return loc >= 0x8000 && loc <= 0x8280;
+		return (loc >= memStart && loc <= memStart + 0x180) || (loc >= fontStart && loc <= fontStart + 0x280);
 	}
 	
-	// Returns whether the screen was updated.
-	public boolean tick() {
-		if (System.currentTimeMillis() % 100 == 0) {
-			for (int x = 0; x < COLUMNS; x++) {
-				for (int y = 0; y < ROWS; y++) {
-					MonitorCell cell = cells[y * 32 + x];
-					if (cell.blink) {
-						shouldRender = true;
-						cell.show = !cell.show;
-					}
-				}
+	public void interrupt() {
+		char b = cpu.getRegister(Register.B).value;
+		switch (cpu.getRegister(Register.A).value) {
+		case 0: // MEM_MAP_SCREEN
+			memStart = b;
+			for (int i = 0; i < 0x180; i++) {
+				char value = cpu.memory[memStart + i].value;
+				MonitorCell cell = cells[i];
+	    		cell.character = (char)(value & 127);
+	    		cell.fgColor = Monitor.convertColor(value >> 12);
+	    		cell.bgColor = Monitor.convertColor(value >> 8);
+	    		cell.blink = (value >> 7 & 1) == 1;
+	    		cell.show = true;
 			}
+			shouldRender = true;
+			break;
+		case 1: // MEM_MAP_FONT
+			fontStart = b;
+			if (b == 0)
+		        font = loadDefaultFont();
+			else {
+				for (int i = 0; i < 0x100; i++)
+					buildFont(i, cpu.memory[fontStart + i].value);
+			}
+			shouldRender = true;
+			break;
+		case 2: // MEM_MAP_PALETTE
+			// TODO!
+			break;
+		case 3: // SET_BORDER_COLOR
+			borderColor = convertColor(b);
+			shouldRender = true;
+			break;
+		case 4: // MEM_DUMP_FONT
+			this.dumpFont(b, loadDefaultFont());
+			break;
+		case 5: // MEM_DUMP_PALETTE
+			// TODO!
+			break;
 		}
-		
-		if (shouldRender) {
-			render();
-			shouldRender = false;
-			return true;
-		}
-		return false;
 	}
 }
