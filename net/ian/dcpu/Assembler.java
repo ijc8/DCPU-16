@@ -158,10 +158,8 @@ public class Assembler {
 					i++;
 				}
 				line = line.substring(i+1);
-				System.out.println("\"" + line + "\"");
 			} else {
 				String[] split = line.split("\\s*(,|\\s)\\s*", 2);
-				System.out.println(Arrays.toString(split));
 				String num = split[0];
 				if (num.isEmpty()) {
 					if (split.length < 2)
@@ -171,7 +169,6 @@ public class Assembler {
 				}
 				data.add((char)parseInt(num));
 				line = line.substring(num.length());
-				System.out.println("\"" + line + "\"");
 			}
 			line = line.trim();
 		}

@@ -1,7 +1,6 @@
 package net.ian.dcpu;
 
 import java.awt.Color;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -199,10 +198,6 @@ public class Monitor extends Hardware {
 		g.dispose();
 	}
 	
-	public void paint(Graphics g) {
-		g.drawImage(screen, 0, 0, null);
-	}
-
 	@Override
 	public void onSet(char location, char value) {
 		if (location < (memStart + 0x180)) {

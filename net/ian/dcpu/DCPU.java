@@ -217,6 +217,7 @@ public class DCPU {
 			break;
 		case 0x11: // IFC - performs next instruction if (b & a) == 0
 			skipping = (b & a) != 0;
+			break;
 		case 0x12: // IFE - performs next instruction if b == a
 			skipping = b != a;
 			break;
@@ -289,6 +290,7 @@ public class DCPU {
 			break;
 		case 0x12: // HWI - send an interrupt to hardware a
 			devices.get(a).interrupt();
+			break;
 		default:
 			debug("Error: Unimplemented special instruction: 0x" + Integer.toHexString(opcode));
 		}
@@ -305,12 +307,12 @@ public class DCPU {
 		int instruction = memory[PC.value].value;
 		int opcode = 0;
 		int rawA = 0, rawB = -1;
-		if ((instruction & 0b11111) == 0 && !skipping) {
+		if ((instruction & 0b11111) == 0) {
 			// Non-basic opcode. aaaaaaooooo00000
 			instruction >>= 5;
-			opcode = instruction & 0b11111;
+			opcode = skipping ? 0 : instruction & 0b11111;
 			rawA = instruction >> 5 & 0b111111;
-		} else if (!skipping) {
+		} else {
 			// Basic opcode. aaaaaabbbbbooooo
 			opcode = instruction & 0b11111;
 			rawA = instruction >> 10 & 0b111111;
@@ -320,6 +322,11 @@ public class DCPU {
 		PC.value++;
 		
 		if (skipping) {
+	        if ((rawA >= 0x10 && rawA <= 0x17) || rawA == 0x1a || rawA == 0x1e || rawA == 0x1f)
+	            PC.value++;
+	        if ((rawB >= 0x10 && rawB <= 0x17) || rawB == 0x1a || rawB == 0x1e || rawB == 0x1f)
+	            PC.value++;
+			
 			skipping = false;
 			if (opcode >= 0x10 && opcode <= 0x17)
 				skipping = true;
