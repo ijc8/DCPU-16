@@ -53,7 +53,8 @@ public class Keyboard extends Hardware implements KeyListener {
 	public void keyPressed(KeyEvent e) {
 		int key = mapKey(e.getKeyCode());
 		if (key == -1) return;
-		addKey((char)key);
+		if (key < 20)
+			addKey((char)key);
 		keyStates[key] = true;
 		System.err.printf("Key press: %d (dcpu: %d)\n", e.getKeyCode(), key);
 	}
