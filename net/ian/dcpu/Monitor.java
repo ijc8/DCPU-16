@@ -200,14 +200,14 @@ public class Monitor extends Hardware {
 	
 	@Override
 	public void onSet(char location, char value) {
-		if (location < (memStart + 0x180)) {
+		if (location >= memStart && location < (memStart + 0x180)) {
     		MonitorCell cell = cells[location - memStart];
     		cell.character = (char)(value & 127);
     		cell.fgColor = Monitor.convertColor(value >> 12);
     		cell.bgColor = Monitor.convertColor(value >> 8);
     		cell.blink = (value >> 7 & 1) == 1;
     		cell.show = true;
-		} else if (fontStart != 0 && location < (fontStart + 0x280)) {
+		} else if (fontStart != 0 && location >= fontStart && location < (fontStart + 0x280)) {
 			// Builds half a font
 			buildFont(location - fontStart, value);
 		}
@@ -216,7 +216,7 @@ public class Monitor extends Hardware {
 	
 	@Override
 	public boolean inMemoryRange(char loc) {
-		return (loc >= memStart && loc <= memStart + 0x180) || (loc >= fontStart && loc <= fontStart + 0x280);
+		return (loc >= memStart && loc <= memStart + 0x180) || (fontStart != 0 && (loc >= fontStart && loc <= fontStart + 0x280));
 	}
 	
 	public void interrupt() {
