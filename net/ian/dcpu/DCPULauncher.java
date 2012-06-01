@@ -18,6 +18,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	DCPU cpu;
 	Keyboard keyboard;
 	Monitor monitor;
+	Clock clock;
 	MonitorPanel display;
 	
 	Assembler assembler;
@@ -36,6 +37,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 		cpu = new DCPU();
 		keyboard = new Keyboard(cpu);
 		monitor = new Monitor(cpu);
+		clock = new Clock(cpu);
 		
 		assembler = new Assembler();
 	}
