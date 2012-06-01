@@ -281,6 +281,10 @@ public class DCPU {
 			a = devices.size();
 			break;
 		case 0x11: // HWQ - sets A, B, C, X, and Y to info about hardware a
+			if (a < 0 || a >= devices.size()) {
+				System.err.println("Error: Code attempted to query invalid hardware number: " + a);
+				break;
+			}
 			Hardware h = devices.get(a);
 			getRegister(Register.A).value = (char)h.id;
 			getRegister(Register.B).value = (char)(h.id >> 16);

@@ -10,6 +10,7 @@ import net.ian.dcpu.DCPU.Register;
 public class Keyboard extends Hardware implements KeyListener {
 	public static final int ID = 0x30cf7406;
 	public static final int VERSION = 1;
+	public static final int MANUFACTURER = 0xCC_743_CA7;
 	
 	private static Map<Integer, Integer> keyMap = new HashMap<>();
 	private char[] keyring = new char[64];
@@ -34,7 +35,7 @@ public class Keyboard extends Hardware implements KeyListener {
 	}
 	
 	public Keyboard(DCPU cpu) {
-        super(ID, VERSION, 0xB65100);
+        super(ID, VERSION, MANUFACTURER);
 		
 		this.cpu = cpu;
 		cpu.attachDevice(this);		
