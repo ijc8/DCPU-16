@@ -24,7 +24,7 @@ public class Assembler {
 		"   ", "   ", "   ", "   ", "   ", "   ", "   "
 		};
 	public static final String[] registers;
-	public static final String[] special = { "SP", "PC", "O" };
+	public static final String[] special = { "SP", "PC", "EX" };
 
 	public ArrayList<Character> instructions;
 	
