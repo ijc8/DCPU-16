@@ -135,7 +135,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 			cpu.clear(assembler.assemble(codeEntry.getText()));
 			cpu.labels = reverseLabels();
 			
-			new Thread(display).start();
+			new Thread(cpu).start();
 			new Thread(this).start();
 		} else if (command.equals("step")) {
 			if (!started) {
@@ -148,8 +148,9 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 				started = true;
 				cpu.running = true;
 			}
-			cycle();
+			cpu.cycle();
 			display.tick();
+			tick();
 		} else if (command.equals("stop"))
 			cpu.running = false;
 	}
@@ -164,16 +165,15 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	
 	public void run() {
 		started = true;
-        cpu.running = true;
-        while (cpu.running)
-        	cycle();
-        display.running = false;
-        display.tick();
+		while (cpu.running) {
+			display.tick();
+			tick();
+		}
+		display.tick();
+		tick();
 	}
-	
-	public void cycle() {
-    	cpu.cycle();
-    	
+
+	public void tick() {
     	for (Register r : Register.values())
     		setLabels(registers[r.ordinal()], cpu.getRegister(r).value);
     	

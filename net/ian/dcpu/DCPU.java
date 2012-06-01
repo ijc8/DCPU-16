@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-public class DCPU {
+public class DCPU implements Runnable {
 	public Cell[] register;
 	public MemoryCell[] memory;
 	public Cell SP, PC, EX;

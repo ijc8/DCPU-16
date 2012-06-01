@@ -10,7 +10,7 @@ import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import javax.swing.JPanel;
 
-public class MonitorPanel extends JPanel implements MouseListener, Runnable {
+public class MonitorPanel extends JPanel implements MouseListener {
 	private static final long serialVersionUID = 1L;
 	
 	public static final int SCALE = 4;
@@ -23,8 +23,6 @@ public class MonitorPanel extends JPanel implements MouseListener, Runnable {
 	private AffineTransformOp scaler;
 	
 	public Monitor monitor;
-
-	public boolean running = false;
 	
 	public MonitorPanel(Monitor m) {
 		monitor = m;
@@ -47,12 +45,6 @@ public class MonitorPanel extends JPanel implements MouseListener, Runnable {
 	public void tick() {
 		if (monitor.tick())
 			render();
-	}
-	
-	public void run() {
-		running = true;
-		while (running)		
-			tick();
 	}
 	
 	public void render() {
