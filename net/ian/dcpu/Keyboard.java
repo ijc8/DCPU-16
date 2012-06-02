@@ -18,6 +18,8 @@ public class Keyboard extends Hardware implements KeyListener {
 	private int keyAccessPtr = 0;
 	// Max key value seems to be 145.
 	private boolean[] keyStates = new boolean[146];
+	private char interruptMsg;
+	private boolean shouldInterrupt;
 	
 	DCPU cpu;
 	
@@ -56,6 +58,7 @@ public class Keyboard extends Hardware implements KeyListener {
 		if (key == -1) return;
 		if (key < 20)
 			addKey((char)key);
+		shouldInterrupt = true;
 		keyStates[key] = true;
 		System.err.printf("Key press: %d (dcpu: %d)\n", e.getKeyCode(), key);
 	}
@@ -64,6 +67,7 @@ public class Keyboard extends Hardware implements KeyListener {
 	public void keyReleased(KeyEvent e) {
 		int key = mapKey(e.getKeyCode());
 		if (key == -1) return;
+		shouldInterrupt = true;
 		keyStates[key] = false;
 		System.err.printf("Key release: %d (dcpu: %d)\n", e.getKeyCode(), key);
 	}
@@ -72,12 +76,20 @@ public class Keyboard extends Hardware implements KeyListener {
 	public void keyTyped(KeyEvent e) {
 		if (e.getKeyChar() >= 0x20 && e.getKeyChar() <= 0x7f) {
 			addKey(e.getKeyChar());
+			shouldInterrupt = true;
 			System.err.printf("Key typed: %d = %c\n", (int)e.getKeyChar(), e.getKeyChar());
 		}
 	}
 	
+	public void tick() {
+		if (interruptMsg != 0 && shouldInterrupt) {
+			cpu.interrupt(interruptMsg);
+			shouldInterrupt = false;
+		}
+	}
+	
 	public void interrupt() {
-		int b = cpu.getRegister(Register.B).value;
+		char b = cpu.getRegister(Register.B).value;
 		int c = cpu.getRegister(Register.C).value;
 		switch (cpu.getRegister(Register.A).value) {
 		case 0: // Clear buffer
@@ -93,10 +105,10 @@ public class Keyboard extends Hardware implements KeyListener {
 			}
 			break;
 		case 2: // Set C to 1 if key specified by B is pressed, 0 otherwise.
-			c = keyStates[b] ? 1 : 0;
+			c = b < keyStates.length && keyStates[b] ? 1 : 0;
 			break;
 		case 3: // If B is 0, disable interrupts. Otherwise enable them with message B.
-			// TODO!
+			interruptMsg = b;
 			break;
 		}
 		cpu.getRegister(Register.C).set(c);
