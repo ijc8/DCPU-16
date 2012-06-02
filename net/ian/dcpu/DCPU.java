@@ -343,7 +343,7 @@ public class DCPU implements Runnable {
 			System.err.println(labels.get(PC.value));
 		}
 		
-		int instruction = memory[PC.value++].value;
+		int instruction = memory[PC.value].value;
 		int opcode = 0;
 		int rawA = 0, rawB = -1;
 		if ((instruction & 0b11111) == 0) {
@@ -359,6 +359,7 @@ public class DCPU implements Runnable {
 		}
 				
 		if (skipping) {
+			PC.value++;
 	        if ((rawA >= 0x10 && rawA <= 0x17) || rawA == 0x1a || rawA == 0x1e || rawA == 0x1f)
 	            PC.value++;
 	        if ((rawB >= 0x10 && rawB <= 0x17) || rawB == 0x1a || rawB == 0x1e || rawB == 0x1f)
@@ -370,16 +371,16 @@ public class DCPU implements Runnable {
 			return;
 		}
 		
-		if (IA.value > 0 && intCurPtr != intEndPtr) {
+		if (IA.value > 0 && !iaq && intCurPtr != intEndPtr) {
 			iaq = true;
-			memory[SP.value--].set(PC.value);
-			memory[SP.value--].set(getRegister(Register.A).value);
+			memory[--SP.value].set(PC.value);
+			memory[--SP.value].set(getRegister(Register.A).value);
 			PC.value = IA.value;
 			getRegister(Register.A).value = interrupts[intCurPtr++];
 			intCurPtr &= 255;
 			
 			// Maybe this should be moved to a parseInstruction() method.
-			instruction = memory[PC.value++].value;
+			instruction = memory[PC.value].value;
 			opcode = 0;
 			rawA = 0;
 			rawB = -1;
@@ -395,6 +396,8 @@ public class DCPU implements Runnable {
 				rawB = instruction >>  5 & 0b11111;
 			}
 		}
+		
+		PC.value++;
 
 		debug("A: ");
 		Cell a = handleArgument(rawA, true), b = null;

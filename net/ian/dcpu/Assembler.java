@@ -363,6 +363,6 @@ public class Assembler {
 		String input = new Scanner(System.in).useDelimiter("\\A").next();
 		Assembler as = new Assembler();
 		for (int word : as.assemble(input))
-			System.out.println(Integer.toHexString(word));
+			System.out.printf("%04x\n", word);
 	}
 }
