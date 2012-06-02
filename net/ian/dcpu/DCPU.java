@@ -5,7 +5,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+
 public class DCPU implements Runnable {
+	public enum Register { A, B, C, X, Y, Z, I, J }
+
 	public Cell[] register;
 	public MemoryCell[] memory;
 	public Cell SP, PC, EX, IA;
@@ -13,6 +18,8 @@ public class DCPU implements Runnable {
 	boolean iaq = false;
 	char interrupts[] = new char[256];
 	char intCurPtr, intEndPtr;
+	
+	public List<Hardware> devices;
 	
 	public boolean running = false;
 	private boolean skipping = false;
@@ -23,9 +30,9 @@ public class DCPU implements Runnable {
 	
 	public Map<Integer, String> labels;
 	
-	public enum Register { A, B, C, X, Y, Z, I, J };
-	
-	public List<Hardware> devices;
+	// Special stuff for the emulator being run w/o GUI, from the command line.
+	public boolean commandLine, setPanel;
+	public MonitorPanel panel;
 	
 	public DCPU() {
 		this(new char[0]);
@@ -328,6 +335,12 @@ public class DCPU implements Runnable {
 			getRegister(Register.Y).value = (char)(h.manufacturer >> 16);
 			break;
 		case 0x12: // HWI - send an interrupt to hardware a
+			if (a >= devices.size()) return;
+			Hardware device = devices.get(a);
+			// If running w/o GUI, a window is not created until a hardware interrupt is actually
+			// sent to the monitor or keyboard. Maybe add a public bool Hardware.requiresWindow?
+			if (commandLine && (device instanceof Monitor || device instanceof Keyboard))
+				setupPanel();
 			devices.get(a).interrupt();
 			break;
 		default:
@@ -416,6 +429,29 @@ public class DCPU implements Runnable {
 		instructionCount++;
 	}
 	
+	public void setupPanel() {
+		if (setPanel) return;
+		setPanel = true;
+		
+		new Thread() {
+			public void run() {
+		        JFrame frame = new JFrame("DCPU-16");
+		        
+		        frame.setContentPane(panel);
+		        
+		        frame.pack();
+		        frame.setResizable(false);
+		        frame.setLocationRelativeTo(null);
+		        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		        frame.setVisible(true);
+		        
+		        while (running) {
+		        	panel.tick();
+		        }
+			}
+		}.start();
+	}
+	
 	public void run() {
 		running = true;
 		while (running) {
@@ -437,7 +473,15 @@ public class DCPU implements Runnable {
 		List<Character> code = new ArrayList<>();
 		while (s.hasNextInt(16))
 			code.add((char)s.nextInt(16));
+		
 		DCPU cpu = new DCPU(code);
+		Monitor monitor = new Monitor(cpu);
+		Keyboard keyboard = new Keyboard(cpu);
+		Clock clock = new Clock(cpu);
+		
+		cpu.panel = new MonitorPanel(monitor);
+		cpu.panel.addKeyListener(keyboard);
+		cpu.commandLine = true;
 		cpu.run();
 		System.out.print(cpu.dump());
 	}
