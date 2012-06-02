@@ -8,7 +8,11 @@ import java.util.Scanner;
 public class DCPU implements Runnable {
 	public Cell[] register;
 	public MemoryCell[] memory;
-	public Cell SP, PC, EX;
+	public Cell SP, PC, EX, IA;
+	// If true, interrupts are queued. If false, they are triggered.
+	boolean iaq = false;
+	char interrupts[] = new char[256];
+	char intCurPtr, intEndPtr;
 	
 	public boolean running = false;
 	private boolean skipping = false;
@@ -38,6 +42,7 @@ public class DCPU implements Runnable {
 		SP = new Cell(0);
 		PC = new Cell(0);
 		EX = new Cell(0);
+		IA = new Cell(0);
 		
 		devices = new ArrayList<Hardware>();
 	}
@@ -54,9 +59,15 @@ public class DCPU implements Runnable {
 		for (int i = 0; i < 0x10000; i++)
 			memory[i].value = i < mem.length ? mem[i] : 0;
 			
+		intEndPtr = intCurPtr = 0;
+		for (int i = 0; i < 256; i++)
+			interrupts[i] = 0;
+		iaq = false;
+			
 		SP.value = 0;
 		PC.value = 0;
 		EX.value = 0;
+		IA.value = 0;
 		
 		instructionCount = 0;
 	}
@@ -100,6 +111,13 @@ public class DCPU implements Runnable {
 	}
 	public Cell getRegister(Register r) {
 		return register[r.ordinal()];
+	}
+	
+	public void interrupt(char interruptMsg) {
+		interrupts[intEndPtr++] = interruptMsg;		
+		intEndPtr &= 255;
+		// TODO: Make it catch fire if intEndPtr == intProcessPtr, which
+		// means it came around and the queue is over 256 interrupts.
 	}
 	
 	private Cell handleArgument(int code, boolean isA) {
@@ -277,6 +295,23 @@ public class DCPU implements Runnable {
 			memory[--SP.value].value = PC.value;
 			PC.value = (char)a;
 			break;
+		case 0x8: // INT - triggers software interrupt with message a
+			interrupt((char)a);
+			break;
+		case 0x9: // IAG - sets a to IA
+			a = IA.value;
+			break;
+		case 0xa: // IAS - sets IA to a
+			IA.set(a);
+			break;
+		case 0xb: // RFI - disables interrupt queueing, pops A and then PC from stack.
+			iaq = false;
+			getRegister(Register.A).set(memory[SP.value++].get());
+			PC.set(memory[SP.value++].get());
+			break;
+		case 0xc: // IAQ - if a is nonzero, interrupts are queued instead of triggered. otherwise they are triggered.
+			iaq = a == 0 ? false : true;
+			break;
 		case 0x10: // HWN - sets a to number of connected devices
 			a = devices.size();
 			break;
@@ -308,7 +343,7 @@ public class DCPU implements Runnable {
 			System.err.println(labels.get(PC.value));
 		}
 		
-		int instruction = memory[PC.value].value;
+		int instruction = memory[PC.value++].value;
 		int opcode = 0;
 		int rawA = 0, rawB = -1;
 		if ((instruction & 0b11111) == 0) {
@@ -322,9 +357,7 @@ public class DCPU implements Runnable {
 			rawA = instruction >> 10 & 0b111111;
 			rawB = instruction >>  5 & 0b11111;
 		}
-		
-		PC.value++;
-		
+				
 		if (skipping) {
 	        if ((rawA >= 0x10 && rawA <= 0x17) || rawA == 0x1a || rawA == 0x1e || rawA == 0x1f)
 	            PC.value++;
@@ -335,6 +368,32 @@ public class DCPU implements Runnable {
 			if (opcode >= 0x10 && opcode <= 0x17)
 				skipping = true;
 			return;
+		}
+		
+		if (IA.value > 0 && intCurPtr != intEndPtr) {
+			iaq = true;
+			memory[SP.value--].set(PC.value);
+			memory[SP.value--].set(getRegister(Register.A).value);
+			PC.value = IA.value;
+			getRegister(Register.A).value = interrupts[intCurPtr++];
+			intCurPtr &= 255;
+			
+			// Maybe this should be moved to a parseInstruction() method.
+			instruction = memory[PC.value++].value;
+			opcode = 0;
+			rawA = 0;
+			rawB = -1;
+			if ((instruction & 0b11111) == 0) {
+				// Non-basic opcode. aaaaaaooooo00000
+				instruction >>= 5;
+				opcode = skipping ? 0 : instruction & 0b11111;
+				rawA = instruction >> 5 & 0b111111;
+			} else {
+				// Basic opcode. aaaaaabbbbbooooo
+				opcode = instruction & 0b11111;
+				rawA = instruction >> 10 & 0b111111;
+				rawB = instruction >>  5 & 0b11111;
+			}
 		}
 
 		debug("A: ");
@@ -356,8 +415,11 @@ public class DCPU implements Runnable {
 	
 	public void run() {
 		running = true;
-		while (running)
+		while (running) {
 			cycle();
+			for (Hardware device : devices)
+				device.tick();
+		}
 	}
 	
 	public String dump() {

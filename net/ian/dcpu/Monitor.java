@@ -155,7 +155,7 @@ public class Monitor extends Hardware {
 	}
 	
 	// Returns whether the screen was updated.
-	public boolean tick() {
+	public boolean update() {
 		if (System.currentTimeMillis() % 100 == 0) {
 			for (int x = 0; x < COLUMNS; x++) {
 				for (int y = 0; y < ROWS; y++) {

@@ -43,7 +43,7 @@ public class MonitorPanel extends JPanel implements MouseListener {
 	}
 
 	public void tick() {
-		if (monitor.tick())
+		if (monitor.update())
 			render();
 	}
 	

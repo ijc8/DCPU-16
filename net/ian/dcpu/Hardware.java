@@ -18,6 +18,7 @@ public class Hardware {
 	public void onSet(char location, char value) {}
 	public void onGet(char location, char value) {}
 
-	public void interrupt() {
-	}
+	public void interrupt() {}
+	
+	public void tick() {}
 }
