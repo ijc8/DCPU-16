@@ -254,7 +254,7 @@ public class Monitor extends Hardware {
 			break;
 		case 4: // MEM_DUMP_FONT
 			this.dumpFont(b, loadDefaultFont());
-			break;
+			break; 
 		case 5: // MEM_DUMP_PALETTE
 			// TODO!
 			break;

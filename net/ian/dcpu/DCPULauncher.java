@@ -44,7 +44,6 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	
 	public void init() {	
         JFrame frame = new JFrame("DCPU-16");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
         frame.setContentPane(this);
@@ -143,9 +142,6 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 			if (!started) {
 				cpu.clear(assembler.assemble(codeEntry.getText()));
 				cpu.labels = reverseLabels();
-				
-				monitor = new Monitor(cpu);
-				display.monitor = monitor;
 				
 				started = true;
 				cpu.running = true;
