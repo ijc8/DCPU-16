@@ -17,3 +17,5 @@ Missing Features
 - Emulation speed is not throttled to 100 khz (though it fully supports the Generic Clock).
 - The assembler does not support PICK yet.
 - The monitor does not support changing or dumping the palette.
+
+Video: [http://youtu.be/t4n3NFtjXWI](http://youtu.be/t4n3NFtjXWI)
