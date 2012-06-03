@@ -14,17 +14,17 @@ public class MemoryCell extends Cell {
 		char old = this.value;
 		super.set(value);
 		if (value != old) {
-			for (Hardware device : cpu.devices) {
-				if (device.inMemoryRange(addr))
-					device.onSet(addr, value);
+			for (MemoryListener listener : cpu.listeners) {
+				if (listener.inMemoryRange(addr))
+					listener.onSet(addr, value);
 			}
 		}
 	}
 	
 	public char get() {
-		for (Hardware device : cpu.devices) {
-			if (device.inMemoryRange(addr))
-				device.onGet(addr, value);
+		for (MemoryListener listener : cpu.listeners) {
+			if (listener.inMemoryRange(addr))
+				listener.onGet(addr, value);
 		}
 		return value;
 	}

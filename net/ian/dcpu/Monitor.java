@@ -9,7 +9,7 @@ import javax.imageio.ImageIO;
 
 import net.ian.dcpu.DCPU.Register;
 
-public class Monitor extends Hardware {
+public class Monitor extends Hardware implements MemoryListener {
 	public static final int ID = 0x7349f615;
 	public static final int VERSION = 0x1802;
 	public static final int MANUFACTURER = 0x1c6c8b36;
@@ -63,7 +63,7 @@ public class Monitor extends Hardware {
 		font = loadDefaultFont();
                 
         cpu.attachDevice(this);
-        
+        cpu.addListener(this);
     }
 	
 	public static Color convertColor(int colorBits) {
@@ -199,6 +199,11 @@ public class Monitor extends Hardware {
 	}
 	
 	@Override
+	public boolean inMemoryRange(char loc) {
+		return (loc >= memStart && loc <= memStart + 0x180) || (fontStart != 0 && (loc >= fontStart && loc <= fontStart + 0x280));
+	}
+	
+	@Override
 	public void onSet(char location, char value) {
 		if (location >= memStart && location < (memStart + 0x180)) {
     		MonitorCell cell = cells[location - memStart];
@@ -213,11 +218,9 @@ public class Monitor extends Hardware {
 		}
 		shouldRender = true;
 	}
-	
+
 	@Override
-	public boolean inMemoryRange(char loc) {
-		return (loc >= memStart && loc <= memStart + 0x180) || (fontStart != 0 && (loc >= fontStart && loc <= fontStart + 0x280));
-	}
+	public void onGet(char location, char value) {}
 	
 	public void interrupt() {
 		char b = cpu.getRegister(Register.B).value;

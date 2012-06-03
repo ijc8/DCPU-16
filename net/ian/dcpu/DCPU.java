@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Scanner;
 
 import javax.swing.JFrame;
-import javax.swing.JPanel;
 
 public class DCPU implements Runnable {
 	public enum Register { A, B, C, X, Y, Z, I, J }
@@ -19,7 +18,8 @@ public class DCPU implements Runnable {
 	char interrupts[] = new char[256];
 	char intCurPtr, intEndPtr;
 	
-	public List<Hardware> devices;
+	public List<Hardware> devices = new ArrayList<>();
+	public List<MemoryListener> listeners = new ArrayList<>();
 	
 	public boolean running = false;
 	private boolean skipping = false;
@@ -50,8 +50,6 @@ public class DCPU implements Runnable {
 		PC = new Cell(0);
 		EX = new Cell(0);
 		IA = new Cell(0);
-		
-		devices = new ArrayList<Hardware>();
 	}
 	
 	public DCPU(List<Character> mem) {
@@ -116,6 +114,10 @@ public class DCPU implements Runnable {
 	public void attachDevice(Hardware h) {
 		devices.add(h);
 	}
+	public void addListener(MemoryListener l) {
+		listeners.add(l);
+	}
+	
 	public Cell getRegister(Register r) {
 		return register[r.ordinal()];
 	}

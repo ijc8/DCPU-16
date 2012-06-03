@@ -10,13 +10,6 @@ public class Hardware {
 		this.version = version;
 		this.manufacturer = manufacturer;
 	}
-	
-	public boolean inMemoryRange(char loc) {
-		return false;
-	}
-	
-	public void onSet(char location, char value) {}
-	public void onGet(char location, char value) {}
 
 	public void interrupt() {}
 	
