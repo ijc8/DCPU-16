@@ -18,4 +18,15 @@ Missing Features
 - The assembler does not support PICK yet.
 - The monitor does not support changing or dumping the palette.
 
+Building
+--------
+
+It requires JDK 7 to be built (for binary literals and the diamond operator). Just compile everything in net/ian/dcpu together via javac, or an IDE.
+
+Usage
+-----
+
+It can be used as an integrated assembler + emulator in a GUI by running the DCPULauncher class.
+To use either the assembler or emulator on their own, with no GUI, just run the Assembler or Emulator class, respectively.
+
 Video: [http://youtu.be/t4n3NFtjXWI](http://youtu.be/t4n3NFtjXWI)
