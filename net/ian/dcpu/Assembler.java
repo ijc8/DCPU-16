@@ -3,6 +3,7 @@ package net.ian.dcpu;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -38,7 +39,7 @@ public class Assembler {
 			registers[r.ordinal()] = r.toString();
 	}
 	
-	private class Argument {
+	private static class Argument {
 		public List<Character> code;
 		public String label = null;
 		
@@ -103,16 +104,27 @@ public class Assembler {
 			if (tokens.length < 2)
 				continue;
 			
-			if (tokens[0].toUpperCase().equals("DAT")) {
+			if (tokens[0].equalsIgnoreCase("DAT")) {
 				instructions.addAll(parseDat(line, tokens));
 				continue;
 			}
 			
-			String op = tokens[0];
-			String arg1 = tokens[1];
+			// Kind of dirty. Combines PICK with the next argument,
+			// so you get something like "PICK 5" in one argument.
+			// Also: Turns out Arrays.asList returns an unmodifiable list.
+			List<String> tokenList = new LinkedList<String>(Arrays.asList(tokens));
+			for (int i = 0; i < tokenList.size(); i++) {
+				if (tokenList.get(i).equalsIgnoreCase("PICK")) {
+					tokenList.set(i, tokenList.get(i) + " " + tokenList.get(i+1));
+					tokenList.remove(i+1);
+				}
+			}
+			
+			String op = tokenList.get(0);
+			String arg1 = tokenList.get(1);
 			String arg2 = null;
 			if (tokens.length > 2)
-				arg2 = tokens[2];
+				arg2 = tokenList.get(2);
 			List<Character> assembled = assemble(op, arg1, arg2);
 			if (assembled == null)
 				instructions.add((char)0);
@@ -243,9 +255,10 @@ public class Assembler {
 		
 		if ((index = Arrays.asList(special).indexOf(arg)) != -1)
 			return new Argument(index + 0x1b);
-		
-		if ((index = handleStack(arg)) != -1)
-			return new Argument(index);
+
+		Argument argument;
+		if ((argument = handleStack(arg)) != null)
+			return argument;
 		
 		if (labels.containsKey(arg)) {
 			int loc = labels.get(arg);
@@ -334,14 +347,16 @@ public class Assembler {
 		throw new NumberFormatException("Could not convert string \"" + s + "\" to a decimal, hex, or binary number.");
 	}
 	
-	private static int handleStack(String s) {
+	private static Argument handleStack(String s) {
 		if (s.equals("POP") || s.equals("PUSH"))
-			return 0x18;
+			return new Argument(0x18);
 		if (s.equals("PEEK"))
-			return 0x19;
-		if (s.equals("PICK")) // TODO allow index after PICK.
-			return 0x1a;
-		return -1;
+			return new Argument(0x19);
+		if (s.startsWith("PICK")) {
+			String[] split = s.split("\\s*(\\s|,)\\s*", 2);
+			return new Argument(0x1a, parseInt(split[1]));
+		}
+		return null;
 	}
 	
 	// Changes arguments into machine code.
