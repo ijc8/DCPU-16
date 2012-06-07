@@ -256,10 +256,12 @@ public class Monitor extends Hardware implements MemoryListener {
 			shouldRender = true;
 			break;
 		case 4: // MEM_DUMP_FONT
-			this.dumpFont(b, loadDefaultFont());
+			dumpFont(b, loadDefaultFont());
+			cpu.cycles += 256;
 			break; 
 		case 5: // MEM_DUMP_PALETTE
 			// TODO!
+			cpu.cycles += 16;
 			break;
 		}
 	}

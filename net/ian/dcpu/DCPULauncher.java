@@ -28,7 +28,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	JLabel[][] registers;
     Cell special[];
 	JLabel[][] specialLabels;
-	JLabel instructionLabel;
+	JLabel instructionLabel, cycleLabel;
 
 	private boolean started;
 	
@@ -117,6 +117,12 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
         panel.add(new JLabel("..."));
         panel.add(instructionLabel);
         
+        panel.add(new JLabel("Cycle:"));
+        cycleLabel = new JLabel();
+        panel.add(new JLabel("..."));
+        panel.add(new JLabel("..."));
+        panel.add(cycleLabel);
+        
         output.add(panel, BorderLayout.SOUTH);
         
         frame.add(output);
@@ -179,6 +185,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
     		setLabels(specialLabels[i], special[i].value);
     	
     	instructionLabel.setText(Integer.toString(cpu.instructionCount));
+    	cycleLabel.setText(Integer.toString(cpu.cycles));
 	}
 	
 	private void setLabels(JLabel[] labels, int value) {
