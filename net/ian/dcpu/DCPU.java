@@ -500,8 +500,8 @@ public class DCPU implements Runnable {
 		int fps = 60;
 		int hz = 100_000;
 		int cyclesPerFrame = hz / fps;
-		int nsPerFrame = 1 / fps * 1000_000_000; 
-		long time;
+		int nsPerFrame = 1000_000_000 / fps;
+		long time, diff = 0;
 		while (running) {
 			time = System.nanoTime();
 			
@@ -511,11 +511,11 @@ public class DCPU implements Runnable {
 			
 			for (Hardware device : devices)
 				device.tick();
-			
 			try {
-				long diff = nsPerFrame - (System.nanoTime() - time);
-				if (diff > 0)
-					Thread.sleep(diff);
+				diff += nsPerFrame - (System.nanoTime() - time);
+				if (diff > 1000_000)
+					Thread.sleep(diff / 1000_000);
+				diff %= 1000_000;
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
