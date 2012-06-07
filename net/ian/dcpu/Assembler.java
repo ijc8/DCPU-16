@@ -277,7 +277,7 @@ public class Assembler {
 		
 		if (arg.startsWith("[")) {
 			if (!arg.endsWith("]")) {
-				System.err.println("Error: No closing square bracket.");
+				System.err.println("Error: No closing square bracket in argument: \"" + arg + "\"");
 				return null;
 			}
 			arg = arg.substring(1, arg.length() - 1);

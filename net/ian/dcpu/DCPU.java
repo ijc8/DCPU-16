@@ -24,7 +24,7 @@ public class DCPU implements Runnable {
 	public boolean running = false;
 	private boolean skipping = false;
 	
-	public int instructionCount = 0;
+	public int instructionCount, cycles;
 	
 	public static final boolean debug = false;
 	
@@ -139,6 +139,7 @@ public class DCPU implements Runnable {
 			return memory[register[code - 0x8].value];
 		} else if (code >= 0x10 && code <= 0x17) {
 			debugf("[next word + %s]", Register.values()[code - 0x10]);
+			cycles++;
 			return memory[memory[PC.value++].value + register[code - 0x10].value];
 		} else if (code == 0x18) {
 			debug(isA ? "POP" : "PUSH");
@@ -148,6 +149,7 @@ public class DCPU implements Runnable {
 			return memory[SP.value];
 		} else if (code == 0x1a) {
 			debug("PICK " + memory[PC.value].value);
+			cycles++;
 			return memory[SP.value + memory[PC.value++].value];
 		} else if (code == 0x1b) {
 			debug("SP");
@@ -160,14 +162,25 @@ public class DCPU implements Runnable {
 			return EX;
 		} else if (code == 0x1e) {
 			debug("[next word]");
+			cycles++;
 			return memory[memory[PC.value++].value];
 		} else if (code == 0x1f) {
 			debug("next word (literal)");
+			cycles++;
 			return new Cell(memory[PC.value++].value);
 		}
 		// Only should happen if argument is A.
 		debug("literal: " + (code - 0x21));
 		return new Cell(code - 0x21);
+	}
+	
+	public void skipIf(boolean test) {
+		// All IF instructions take at least 2 cycles.
+		cycles += 2;
+		// And an extra cycle if the test fails.
+		if (!test)
+			cycles++;
+		skipping = test;
 	}
 	
 	private void processBasic(int opcode, Cell cellA, Cell cellB) {
@@ -180,22 +193,28 @@ public class DCPU implements Runnable {
 		
 		switch (opcode) {
 		case 0x1: // SET - sets b to a
+			cycles++;
 			b = a;
 			break;
 		case 0x2: // ADD - add a to b
+			cycles += 2;
 			ex = (b += a) > 0xffff ? 1 : 0;
 			break;
 		case 0x3: // SUB - subtract from b
+			cycles += 2;
 			ex = (b -= a) < 0 ? 0xffff : 0;
 			break;
 		case 0x4: // MUL - multiplies b by a
+			cycles += 2;
 			ex = (b *= a) >> 16 & 0xffff;
 			break;
 		case 0x5: // MLI - multiplies signed values
+			cycles += 2;
 			b = (short)a * (short)b;
 			ex = b >> 16 & 0xffff;
 			break;
 		case 0x6: // DIV divides b by a
+			cycles += 3;
 			if (a == 0) {
 				b = 0;
 				ex = 0;
@@ -205,6 +224,7 @@ public class DCPU implements Runnable {
 			}
 			break;
 		case 0x7: // DVI - divides signed values
+			cycles += 3;
 			if (a == 0) {
 				b = 0;
 				ex = 0;
@@ -214,67 +234,79 @@ public class DCPU implements Runnable {
 			}
 			break;
 		case 0x8: // MOD - (sets b to b % a)
+			cycles += 3;
 			b = (a == 0) ? 0 : b % a;
 			break;
 		case 0x9: // MDI - MOD with signed values
+			cycles += 3;
 			b = (a == 0) ? 0 : (short)b % (short)a;
 		case 0xa: // AND - sets b to b & a
+			cycles++;
 			b &= a;
 			break;
 		case 0xb: // BOR - sets b to b | a
+			cycles++;
 			b |= a;
 			break;
 		case 0xc: // XOR - sets b to b ^ a
+			cycles++;
 			b ^= a;
 			break;
 		case 0xd: // SHR - shifts b right by a (logical shift)
+			cycles++;
 			ex = b << 16 >> a;
 			b >>>= a;
 			break;
 		case 0xe: // ASR - shift b right by a (arithmetic shift)
+			cycles++;
 			ex = b << 16 >>> a;
 			b >>= a;
 			break;
 		case 0xf: // SHL - shifts b left by a
+			cycles++;
 			ex = b << a >> 16;
 			b = b << a;
 			break;
 		case 0x10: // IFB - performs next instruction if (b & a) != 0
-			skipping = (b & a) == 0;
+			skipIf((b & a) == 0);
 			break;
 		case 0x11: // IFC - performs next instruction if (b & a) == 0
-			skipping = (b & a) != 0;
+			skipIf((b & a) != 0);
 			break;
 		case 0x12: // IFE - performs next instruction if b == a
-			skipping = b != a;
+			skipIf(b != a);
 			break;
 		case 0x13: // IFN - performs next instruction if b != a
-			skipping = b == a;
+			skipIf(b == a);
 			break;
 		case 0x14: // IFG - performs next instruction if b > a
-			skipping = b <= a;
+			skipIf(b <= a);
 			break;
 		case 0x15: // IFA - IFG with signed values
-			skipping = (short)b <= (short)a;
+			skipIf((short)b <= (short)a);
 			break;
 		case 0x16: // IFL - performs next instruction if b < a
-			skipping = b >= a;
+			skipIf(b >= a);
 			break;
 		case 0x17: // IFU - IFL with signed values
-			skipping = (short)b >= (short)a; 
+			skipIf((short)b >= (short)a); 
 			break;
 		case 0x1a: // ADX - sets b to b+a+EX
+			cycles += 3;
 			ex = (b += a + ex) > 0xffff ? 1 : 0;
 			break;
 		case 0x1b: // SBX - sets b to b-a+EX
+			cycles += 3;
 			ex = (b = b - a + ex) < 0 ? 0xffff : 0;
 			break;
 		case 0x1e: // STI - sets b to a, then increments I and J
+			cycles += 2;
 			b = a;
 			getRegister(Register.I).value++;
 			getRegister(Register.J).value++;
 			break;
 		case 0x1f: // STD - sets b to a, then decrements I and J
+			cycles += 2;
 			b = a;
 			getRegister(Register.I).value--;
 			getRegister(Register.J).value--;
@@ -301,30 +333,38 @@ public class DCPU implements Runnable {
 			running = false;
 			break;
 		case 0x1: // JSR - pushes the address of the next instruction to the stack, sets PC to a
+			cycles += 3;
 			memory[--SP.value].value = PC.value;
 			PC.value = (char)a;
 			break;
 		case 0x8: // INT - triggers software interrupt with message a
+			cycles += 4;
 			interrupt((char)a);
 			break;
 		case 0x9: // IAG - sets a to IA
+			cycles++;
 			a = IA.value;
 			break;
 		case 0xa: // IAS - sets IA to a
+			cycles++;
 			IA.set(a);
 			break;
 		case 0xb: // RFI - disables interrupt queueing, pops A and then PC from stack.
+			cycles += 3;
 			iaq = false;
 			getRegister(Register.A).set(memory[SP.value++].get());
 			PC.set(memory[SP.value++].get());
 			break;
 		case 0xc: // IAQ - if a is nonzero, interrupts are queued instead of triggered. otherwise they are triggered.
+			cycles += 2;
 			iaq = a == 0 ? false : true;
 			break;
 		case 0x10: // HWN - sets a to number of connected devices
+			cycles += 2;
 			a = devices.size();
 			break;
 		case 0x11: // HWQ - sets A, B, C, X, and Y to info about hardware a
+			cycles += 4;
 			if (a < 0 || a >= devices.size()) {
 				System.err.println("Error: Code attempted to query invalid hardware number: " + a);
 				break;
@@ -337,6 +377,7 @@ public class DCPU implements Runnable {
 			getRegister(Register.Y).value = (char)(h.manufacturer >> 16);
 			break;
 		case 0x12: // HWI - send an interrupt to hardware a
+			cycles += 4;
 			if (a >= devices.size()) return;
 			Hardware device = devices.get(a);
 			// If running w/o GUI, a window is not created until a hardware interrupt is actually
@@ -346,7 +387,7 @@ public class DCPU implements Runnable {
 			devices.get(a).interrupt();
 			break;
 		default:
-			debug("Error: Unimplemented special instruction: 0x" + Integer.toHexString(opcode));
+			debugln("Error: Unimplemented special instruction: 0x" + Integer.toHexString(opcode));
 		}
 		
 		cellA.set(a);
