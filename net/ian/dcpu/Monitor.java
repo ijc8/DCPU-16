@@ -161,22 +161,22 @@ public class Monitor extends Hardware implements MemoryListener {
 				for (int y = 0; y < ROWS; y++) {
 					MonitorCell cell = cells[y * 32 + x];
 					if (cell.blink) {
-						shouldRender = true;
+						setShouldRender(true);
 						cell.show = !cell.show;
 					}
 				}
 			}
 		}
 		
-		if (shouldRender) {
+		if (getShouldRender()) {
 			render();
-			shouldRender = false;
+			setShouldRender(false);
 			return true;
 		}
 		return false;
 	}
 	
-	public void render() {
+	public synchronized void render() {
 		Graphics2D g = screen.createGraphics();
 		
 		g.setColor(borderColor);
@@ -216,11 +216,19 @@ public class Monitor extends Hardware implements MemoryListener {
 			// Builds half a font
 			buildFont(location - fontStart, value);
 		}
-		shouldRender = true;
+		setShouldRender(true);
 	}
 
 	@Override
 	public void onGet(char location, char value) {}
+	
+	public synchronized boolean getShouldRender() {
+		return shouldRender;
+	}
+	
+	public synchronized void setShouldRender(boolean value) {
+		shouldRender = value;
+	}
 	
 	public void interrupt() {
 		char b = cpu.getRegister(Register.B).value;
@@ -236,7 +244,7 @@ public class Monitor extends Hardware implements MemoryListener {
 	    		cell.blink = (value >> 7 & 1) == 1;
 	    		cell.show = true;
 			}
-			shouldRender = true;
+			setShouldRender(true);
 			break;
 		case 1: // MEM_MAP_FONT
 			fontStart = b;
@@ -246,14 +254,14 @@ public class Monitor extends Hardware implements MemoryListener {
 				for (int i = 0; i < 0x100; i++)
 					buildFont(i, cpu.memory[fontStart + i].value);
 			}
-			shouldRender = true;
+			setShouldRender(true);
 			break;
 		case 2: // MEM_MAP_PALETTE
 			// TODO!
 			break;
 		case 3: // SET_BORDER_COLOR
 			borderColor = convertColor(b);
-			shouldRender = true;
+			setShouldRender(true);
 			break;
 		case 4: // MEM_DUMP_FONT
 			dumpFont(b, loadDefaultFont());
