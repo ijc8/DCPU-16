@@ -14,8 +14,9 @@ Distinctive Features
 Missing Features
 ----------------
 
-- Emulation speed is not throttled to 100 khz.
+- Emulation speed is not throttled to 100 khz (this is being worked on).
 - The monitor does not support changing or dumping the palette.
+- The assembler has some known bugs and is pretty inflexible.
 
 Building
 --------
