@@ -497,10 +497,28 @@ public class DCPU implements Runnable {
 	
 	public void run() {
 		running = true;
+		int fps = 60;
+		int hz = 100_000;
+		int cyclesPerFrame = hz / fps;
+		int nsPerFrame = 1 / fps * 1000_000_000; 
+		long time;
 		while (running) {
-			cycle();
+			time = System.nanoTime();
+			
+			while (cycles < cyclesPerFrame)
+				cycle();
+			cycles -= cyclesPerFrame;
+			
 			for (Hardware device : devices)
 				device.tick();
+			
+			try {
+				long diff = nsPerFrame - (System.nanoTime() - time);
+				if (diff > 0)
+					Thread.sleep(diff);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	

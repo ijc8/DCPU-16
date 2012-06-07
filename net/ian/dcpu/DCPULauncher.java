@@ -139,6 +139,7 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
 		if (command.equals("run")) {
+			cpu.running = false;
 			cpu.clear(assembler.assemble(codeEntry.getText()));
 			cpu.labels = reverseLabels();
 			
