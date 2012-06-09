@@ -153,9 +153,9 @@ public class Monitor extends Hardware implements MemoryListener {
 		// Stick a palette in DCPU memory. For use with MEM_DUMP_PALETTE.
 		for (int i = 0; i < palette.length; i++) {
 			char word = 0;
-			word &= palette[i].getRed() << 8;
-			word &= palette[i].getGreen() << 4;
-			word &= palette[i].getBlue();
+			word &= (palette[i].getRed() / 17) << 8;
+			word &= (palette[i].getGreen() / 17) << 4;
+			word &= palette[i].getBlue() / 17;
 			cpu.memory[start + i].set(word);
 		}
 	}
