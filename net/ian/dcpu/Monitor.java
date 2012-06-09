@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Arrays;
 
 import javax.imageio.ImageIO;
 
@@ -27,12 +28,30 @@ public class Monitor extends Hardware implements MemoryListener {
 	public BufferedImage screen;
 	
 	public BufferedImage font[];
+	public Color palette[];
 	public MonitorCell cells[];
+	
+	static Color defaultPalette[] = new Color[16];
+	
+	static {
+		for (int i = 0; i < 16; i++) {
+			boolean h = (i >> 3 & 1) == 1;
+			
+			int r = 0xAA * (i >> 2 & 1) + (h ? 0x55 : 0);
+			int g = 0xAA * (i >> 1 & 1) + (h ? 0x55 : 0);
+			int b = 0xAA * (i >> 0 & 1) + (h ? 0x55 : 0);
+			
+			if ((i & 0xf) == 6)
+				g -= 0x55;
+			
+			defaultPalette[i] = new Color(r, g, b);
+		}
+	}
 	
 	public Color borderColor = Color.BLACK;
 		
 	private DCPU cpu;
-	private char memStart, fontStart;
+	private char memStart, fontStart, paletteStart;
 
 	public boolean shouldRender;
 	
@@ -61,36 +80,11 @@ public class Monitor extends Hardware implements MemoryListener {
         	cells[i] = new MonitorCell((char)0, Color.BLACK, Color.BLACK, false);
         
 		font = loadDefaultFont();
+		palette = Arrays.copyOf(defaultPalette, defaultPalette.length);
                 
         cpu.attachDevice(this);
         cpu.addListener(this);
     }
-	
-	public static Color convertColor(int colorBits) {
-		boolean h = (colorBits >> 3 & 1) == 1;
-
-		int r = 0xAA * (colorBits >> 2 & 1) + (h ? 0x55 : 0);
-		int g = 0xAA * (colorBits >> 1 & 1) + (h ? 0x55 : 0);
-		int b = 0xAA * (colorBits >> 0 & 1) + (h ? 0x55 : 0);
-		
-		if ((colorBits & 0xf) == 6)
-			g -= 0x55;
-		
-		return new Color(r, g, b);
-	}
-	
-	public void buildFont(int location, char word) {
-		// Actually builds half a font, because a full font takes two words.
-		BufferedImage fontChar = font[location / 2];
-		int half = location % 2;
-		
-		for (int col = 0; col < 2; col++) {
-			for (int row = 0; row < 8; row++) {
-				int color = ((word >> ((1 - col) * 8 + row)) & 1) == 1 ? Color.WHITE.getRGB() : Color.BLACK.getRGB();
-				fontChar.setRGB(col + (half * 2), row, color);
-			}
-		}
-	}
 	
 	public BufferedImage[] loadDefaultFont() {
 		BufferedImage img;
@@ -116,20 +110,53 @@ public class Monitor extends Hardware implements MemoryListener {
 		return defaultFont;
 	}
 	
+	public void buildFont(int location, char word) {
+		// Actually builds half a font, because a full font takes two words.
+		BufferedImage fontChar = font[location / 2];
+		int half = location % 2;
+		
+		for (int col = 0; col < 2; col++) {
+			for (int row = 0; row < 8; row++) {
+				int color = ((word >> ((1 - col) * 8 + row)) & 1) == 1 ? Color.WHITE.getRGB() : Color.BLACK.getRGB();
+				fontChar.setRGB(col + (half * 2), row, color);
+			}
+		}
+	}
+	
+	public void buildPalette(int index, char word) {
+		int red   = word >> 8;
+        int green = word >> 4 & 0xf;
+        int blue  = word & 0xf;
+        
+        // 255 / 15 = 17
+        palette[index] = new Color(red * 17, green * 17, blue * 17);
+	}
+	
 	public void dumpFont(char start, BufferedImage[] font) {
 		// Stick a font in DCPU memory. For use with MEM_DUMP_FONT.
 		for (int i = 0; i < font.length; i++) {
-			int word = 0;
+			char word = 0;
 			for (int x = 0; x < font[i].getWidth(); x++) {
 				for (int y = 0; y < font[i].getHeight(); y++) {
 					if (font[i].getRGB(x, y) == Color.WHITE.getRGB())
 						word |= 1 << ((3 - x) * 8 + y);
 					char word2 = (char)(word & 0xffff);
 					char word1 = (char)(word >> 16);
-					cpu.memory[start + (i * 2)].value = word1;
-					cpu.memory[start + (i * 2) + 1].value = word2;
+					cpu.memory[start + (i * 2)].set(word1);
+					cpu.memory[start + (i * 2) + 1].set(word2);
 				}
 			}
+		}
+	}
+	
+	public void dumpPalette(char start, Color[] palette) {
+		// Stick a palette in DCPU memory. For use with MEM_DUMP_PALETTE.
+		for (int i = 0; i < palette.length; i++) {
+			char word = 0;
+			word &= palette[i].getRed() << 8;
+			word &= palette[i].getGreen() << 4;
+			word &= palette[i].getBlue();
+			cpu.memory[start + i].set(word);
 		}
 	}
 
@@ -200,7 +227,9 @@ public class Monitor extends Hardware implements MemoryListener {
 	
 	@Override
 	public boolean inMemoryRange(char loc) {
-		return (loc >= memStart && loc <= memStart + 0x180) || (fontStart != 0 && (loc >= fontStart && loc <= fontStart + 0x280));
+		return (loc >= memStart && loc < memStart + 0x180)
+				|| (fontStart != 0 && (loc >= fontStart && loc < fontStart + 0x280))
+				|| (paletteStart != 0 && (loc >= paletteStart && loc < paletteStart + 0xf));
 	}
 	
 	@Override
@@ -208,13 +237,15 @@ public class Monitor extends Hardware implements MemoryListener {
 		if (location >= memStart && location < (memStart + 0x180)) {
     		MonitorCell cell = cells[location - memStart];
     		cell.character = (char)(value & 127);
-    		cell.fgColor = Monitor.convertColor(value >> 12);
-    		cell.bgColor = Monitor.convertColor(value >> 8);
+    		cell.fgColor = palette[value >> 12];
+    		cell.bgColor = palette[value >> 8 & 0xf];
     		cell.blink = (value >> 7 & 1) == 1;
     		cell.show = true;
 		} else if (fontStart != 0 && location >= fontStart && location < (fontStart + 0x280)) {
 			// Builds half a font
 			buildFont(location - fontStart, value);
+		} else if (paletteStart != 0 && location >= paletteStart && location < (paletteStart + 0xf)) {
+			buildPalette(location - paletteStart, value);
 		}
 		setShouldRender(true);
 	}
@@ -239,8 +270,8 @@ public class Monitor extends Hardware implements MemoryListener {
 				char value = cpu.memory[memStart + i].value;
 				MonitorCell cell = cells[i];
 	    		cell.character = (char)(value & 127);
-	    		cell.fgColor = Monitor.convertColor(value >> 12);
-	    		cell.bgColor = Monitor.convertColor(value >> 8);
+	    		cell.fgColor = palette[value >> 12];
+	    		cell.bgColor = palette[value >> 8 & 0xf];
 	    		cell.blink = (value >> 7 & 1) == 1;
 	    		cell.show = true;
 			}
@@ -251,16 +282,22 @@ public class Monitor extends Hardware implements MemoryListener {
 			if (b == 0)
 		        font = loadDefaultFont();
 			else {
-				for (int i = 0; i < 0x100; i++)
+				for (int i = 0; i < 0x100 && fontStart + i < 0x10000; i++)
 					buildFont(i, cpu.memory[fontStart + i].value);
 			}
 			setShouldRender(true);
 			break;
 		case 2: // MEM_MAP_PALETTE
-			// TODO!
+			paletteStart = b;
+			if (b == 0)
+				palette = Arrays.copyOf(defaultPalette, defaultPalette.length);
+			else {
+				for (int i = 0; i < 0x10; i++)
+					buildPalette(i, cpu.memory[paletteStart + i].value);
+			}
 			break;
 		case 3: // SET_BORDER_COLOR
-			borderColor = convertColor(b);
+			borderColor = palette[b];
 			setShouldRender(true);
 			break;
 		case 4: // MEM_DUMP_FONT
@@ -268,7 +305,7 @@ public class Monitor extends Hardware implements MemoryListener {
 			cpu.cycles += 256;
 			break; 
 		case 5: // MEM_DUMP_PALETTE
-			// TODO!
+			dumpPalette(b, defaultPalette);
 			cpu.cycles += 16;
 			break;
 		}
