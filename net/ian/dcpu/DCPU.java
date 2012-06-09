@@ -170,7 +170,10 @@ public class DCPU implements Runnable {
 			return new Cell(memory[PC.value++].value);
 		}
 		// Only should happen if argument is A.
-		debug("literal: " + (code - 0x21));
+		if (!isA)
+			debugln("Error: Unknown argument 0x" + Integer.toHexString(code) + " in B.");
+		else
+			debug("literal: " + (code - 0x21));
 		return new Cell(code - 0x21);
 	}
 	
