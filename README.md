@@ -14,8 +14,8 @@ Distinctive Features
 Missing Features
 ----------------
 
-- The monitor does not support changing or dumping the palette.
 - The assembler has some known bugs and is pretty inflexible.
+- There's no direct support for loading assembled binaries.
 
 Building
 --------
