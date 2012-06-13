@@ -1,7 +1,5 @@
 package net.ian.dcpu;
 
-import net.ian.dcpu.DCPU.Register;
-
 public class Clock extends Hardware {
 	public static final int ID = 0x12d0b402;
 	public static final int VERSION = 1;

@@ -8,8 +8,6 @@ import java.util.Scanner;
 import javax.swing.JFrame;
 
 public class DCPU implements Runnable {
-	public enum Register { A, B, C, X, Y, Z, I, J }
-
 	public Cell[] register;
 	public MemoryCell[] memory;
 	public Cell SP, PC, EX, IA;
@@ -191,8 +189,8 @@ public class DCPU implements Runnable {
 		int b = cellB.value;
 		int ex = 0;
 		
-		if ((opcode - 1) < Assembler.basicOps.length)
-			debugln(Assembler.basicOps[opcode - 1]);
+		if ((opcode - 1) < OldAssembler.basicOps.length)
+			debugln(OldAssembler.basicOps[opcode - 1]);
 		
 		switch (opcode) {
 		case 0x1: // SET - sets b to a
@@ -325,8 +323,8 @@ public class DCPU implements Runnable {
 	private void processSpecial(int opcode, Cell cellA) {
 		int a = cellA.value;
 		
-		if (opcode > 0 && (opcode - 1) < Assembler.specialOps.length)
-			debugln(Assembler.specialOps[opcode - 1]);
+		if (opcode > 0 && (opcode - 1) < OldAssembler.specialOps.length)
+			debugln(OldAssembler.specialOps[opcode - 1]);
 		
 		switch (opcode) {
 		case 0x0: // EXIT - custom code, makes the processor stop.

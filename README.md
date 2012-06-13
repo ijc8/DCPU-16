@@ -14,7 +14,7 @@ Distinctive Features
 Missing Features
 ----------------
 
-- The assembler has some known bugs and is pretty inflexible.
+- The assembler has some known bugs and is pretty inflexible (being worked on; this is the assembler development branch).
 - There's no direct support for loading assembled binaries.
 
 Building

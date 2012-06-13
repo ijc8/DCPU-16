@@ -2,382 +2,195 @@ package net.ian.dcpu;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
 public class Assembler {
-	// Blanks correspond to unspecified operations.
-	// Should probably move this elsewhere.
-	public static final String[] basicOps = {
+	
+	public static final List<String> basicOps = Arrays.asList(
 		"SET", "ADD", "SUB", "MUL", "MLI", "DIV", "DVI", "MOD",
 		"MDI", "AND", "BOR", "XOR", "SHR", "ASR", "SHL", "IFB",
 		"IFC", "IFE", "IFN", "IFG", "IFA", "IFL", "IFU", "   ",
 		"   ", "ADX", "SBX", "   ", "   ", "STI", "STD"
-		};
-
-	public static final String[] specialOps = {
-		"JSR", "   ", "   ", "   ", "   ", "   ", "HCF", "INT",
-		"IAG", "IAS", "RFI", "IAQ", "   ", "   ", "   ", "HWN",
-		"HWQ", "HWI", "   ", "   ", "   ", "   ", "   ", "   ",
-		"   ", "   ", "   ", "   ", "   ", "   ", "   "
-		};
-	public static final String[] registers;
-	public static final String[] special = { "SP", "PC", "EX" };
-
-	public ArrayList<Character> instructions;
+	);
 	
-	public Map<String, Integer> labels;
-	public Map<Integer, String> fixes;
-		
-	static {
-		DCPU.Register regs[] = DCPU.Register.values();
-		registers = new String[regs.length];
-		for (DCPU.Register r : regs)
-			registers[r.ordinal()] = r.toString();
-	}
+	public static final List<String> specialOps = Arrays.asList(
+			"JSR", "   ", "   ", "   ", "   ", "   ", "HCF", "INT",
+			"IAG", "IAS", "RFI", "IAQ", "   ", "   ", "   ", "HWN",
+			"HWQ", "HWI", "   ", "   ", "   ", "   ", "   ", "   ",
+			"   ", "   ", "   ", "   ", "   ", "   ", "   "
+	);
 	
-	private static class Argument {
-		public List<Character> code;
-		public String label = null;
+	abstract static class Argument {
+		public abstract char getCode();
 		
-		@SuppressWarnings("unused")
-		public Argument(Character... args) {
-			code = Arrays.asList(args);
+		public int getExtraWord() {
+			return -1;
 		}
 		
-		// I immensely dislike how Java makes a big
-		// distinction between integer data types.
-		public Argument(int... args) {
-			code = new ArrayList<Character>();
-			for (int i : args)
-				code.add((char)i);
-		}
-		
-		@SuppressWarnings("unused")
-		public Argument(String label, Character... args) {
-			code = Arrays.asList(args);
-			this.label = label;
-		}
-		
-		public Argument(String label, int... args) {
-			this(args);
-			this.label = label;
+		public static Argument read(Scanner scanner) {
+			return null;
 		}
 	}
 	
-	public List<Character> assemble(String code) {
-		instructions = new ArrayList<Character>();
-		labels = new HashMap<String, Integer>();
-		fixes = new HashMap<Integer, String>();
+	static class RegisterArgument extends Argument {
+		Register register;
 		
-		String[] lines = code.trim().split("\\s*\n\\s*");
-		for (String line : lines) {
-			// Comments
-			String[] c = line.split(";");
-
-			if (c.length == 0)
-				continue;
-			line = c[0];
-			if (line.isEmpty())
-				continue;
-			
-			// Labels
-			if (line.startsWith(":")) {
-				String[] tmp = line.split("\\s+", 2);
-				String label = tmp[0].substring(1).toUpperCase();
-				if (labels.containsKey(label))
-					System.err.println("Error: Label " + label + " defined twice!");
-				else
-					labels.put(label, instructions.size());
-				if (tmp.length < 2)
-					continue;
-				line = tmp[1];
-				if (line.isEmpty())
-					continue;
-			}
-			
-			String[] tokens = line.split("\\s*(,|\\s)\\s*");
-			
-			if (tokens.length < 2)
-				continue;
-			
-			if (tokens[0].equalsIgnoreCase("DAT")) {
-				instructions.addAll(parseDat(line, tokens));
-				continue;
-			}
-			
-			// Kind of dirty. Combines PICK with the next argument,
-			// so you get something like "PICK 5" in one argument.
-			// Also: Turns out Arrays.asList returns an unmodifiable list.
-			List<String> tokenList = new LinkedList<String>(Arrays.asList(tokens));
-			for (int i = 0; i < tokenList.size(); i++) {
-				if (tokenList.get(i).equalsIgnoreCase("PICK")) {
-					tokenList.set(i, tokenList.get(i) + " " + tokenList.get(i+1));
-					tokenList.remove(i+1);
+		public RegisterArgument(Register r) {
+			register = r;
+		}
+		
+		public char getCode() {
+			return (char)register.ordinal();
+		}
+		
+		public static RegisterArgument read(Scanner scanner) {
+			for (Register r : Register.values()) {
+				if (scanner.hasNext(r.toString()) || scanner.hasNext(r.toString().toLowerCase())) {
+					scanner.next();
+					System.out.printf("Found register: %s\n", r.toString());
+					return new RegisterArgument(r);
 				}
 			}
 			
-			String op = tokenList.get(0);
-			String arg1 = tokenList.get(1);
-			String arg2 = null;
-			if (tokens.length > 2)
-				arg2 = tokenList.get(2);
-			List<Character> assembled = assemble(op, arg1, arg2);
-			if (assembled == null)
-				instructions.add((char)0);
+			return null;
+		}
+		
+		public String toString() {
+			return register.toString();
+		}
+	}
+	
+	static class IntArgument extends Argument {
+		char n;
+		
+		public IntArgument(char n) {
+			this.n = n;
+		}
+		
+		public IntArgument(int n) {
+			this.n = (char)n;
+		}
+		
+		public char getCode() {
+			if ((short)n >= -1 && (short)n <= 30)
+				return (char)(0x21 + n); // Max is 63, which is the largest integer that fits in 6 bits.
+			return 0x1f; // Next word (literal).
+		}
+		
+		public int getExtraWord() {
+			if ((short)n >= -1 && (short)n <= 30)
+				return -1;
 			else
-				instructions.addAll(assembled);
+				return n;
 		}
 		
-		insertLabels();
-		
-		return instructions;
-	}
-	
-	private List<Character> parseDat(String line, String[] tokens) {
-		List<Character> data = new ArrayList<>();
-		
-		line = line.trim();
-		line = line.substring(3); // Length of "DAT"
-		line = line.trim();
-		while (!line.isEmpty()) {
-			if (line.charAt(0) == ';')
-				break;
-			else if (line.charAt(0) == '"') {
-				// Handle string literals.
-				line = line.substring(1);
-				int i = 0;
-				while (true) {
-					if (line.charAt(i) == '\\') {
-						if (line.charAt(i+1) == 'n')
-							data.add('\n');
-						else if (line.charAt(i+1) == 't')
-							data.add('\t');
-						else if (line.charAt(i+1) == '"')
-							data.add('"');
-						else if (line.charAt(i+1) == '0')
-							data.add('\0');
-						else
-							data.add(line.charAt(i+1));
-						i += 2;
-						continue;
-					} else if (line.charAt(i) == '"')
-						break;
-					data.add(line.charAt(i));
-					i++;
-				}
-				line = line.substring(i+1);
-			} else {
-				String[] split = line.split("\\s*(,|\\s)\\s*", 2);
-				String num = split[0];
-				if (num.isEmpty()) {
-					if (split.length < 2)
-						break;
-					line = split[1];
-					continue;
-				}
-				data.add((char)parseInt(num));
-				line = line.substring(num.length());
-			}
-			line = line.trim();
-		}
-		return data;
-	}
-
-	// This inserts labels in parts of the program where they
-	// were used before they existed, via the "fixes" map.
-	private void insertLabels() {
-		for (Map.Entry<Integer, String> entry : fixes.entrySet()) {
-			int index = entry.getKey();
-			String label = entry.getValue();
-			System.err.printf("Fixing: %s at %d\n", label, index);
-			Integer loc;
-			if ((loc = labels.get(label)) != null) {
-				instructions.set(index, (char)(int)loc);
-			} else
-				System.err.printf("Error: True assembly error (in insertLabels): %s at %d\n", label, index);
-		}
-	}
-	
-	public List<Character> assemble(String sOp, String sArg1, String sArg2) {
-		sOp = sOp.toUpperCase();
-		boolean isBasic = (sArg2 != null);
-		int op = Arrays.asList(isBasic ? basicOps : specialOps).indexOf(sOp) + 1;
-		if (op < 1)
-			System.err.println("Broken OP! \"" + sOp + "\" isBasic = " + isBasic);
-		int a, b = -1;
-		int instructionCount = instructions.size();
-		
-		sArg1 = sArg1.toUpperCase();
-		if (isBasic)
-			sArg2 = sArg2.toUpperCase();
-		
-		Argument argA = handleArgument(isBasic ? sArg2 : sArg1);
-		List<Character> codeA = argA.code;
-		instructionCount += codeA.size() - 1;
-		
-		if (argA.label != null)
-			fixes.put(instructionCount, argA.label);
-		
-		a = codeA.get(0);
-			
-		Argument argB = null;
-		List<Character> codeB = null;
-		if (isBasic) {
-			argB = handleArgument(sArg1);
-			codeB = argB.code;
-			instructionCount += codeB.size() - 1;
-			if (argB.label != null)
-				fixes.put(instructionCount, argB.label);
-			b = codeB.get(0);
-		}
-		
-		List<Character> words = new ArrayList<>();
-		words.add(compile(op, a, b));
-		words.addAll(codeA.subList(1, codeA.size()));
-		if (argB != null)
-			words.addAll(codeB.subList(1, codeB.size()));
-				
-		return words;
-	}
-	
-	public List<Character> assemble(String op, String arg) {
-		return assemble(op, arg, null);
-	}
-	 
-	private Argument handleArgument(String arg) {
-		int index = Arrays.asList(registers).indexOf(arg);
-		if (index != -1)
-			return new Argument(index);
-		
-		if ((index = Arrays.asList(special).indexOf(arg)) != -1)
-			return new Argument(index + 0x1b);
-
-		Argument argument;
-		if ((argument = handleStack(arg)) != null)
-			return argument;
-		
-		if (labels.containsKey(arg)) {
-			int loc = labels.get(arg);
-			if (loc < 30)
-				return new Argument(loc + 0x21);
-			return new Argument(0x1f, loc);
-		}
-		
-		int n;
-		try {
-			n = parseInt(arg);
-			if (n >= -1 && n < 30)
-				return new Argument(n + 0x21);
-			return new Argument(0x1f, n);
-		} catch (NumberFormatException _) {}
-		
-		if (arg.startsWith("[")) {
-			if (!arg.endsWith("]")) {
-				System.err.println("Error: No closing square bracket in argument: \"" + arg + "\"");
+		public static IntArgument read(Scanner scanner) {
+			if (!scanner.hasNext("[+-]?(0[XxBb])?\\d+"))
 				return null;
-			}
-			arg = arg.substring(1, arg.length() - 1);
-			if ((index = Arrays.asList(registers).indexOf(arg)) != -1)
-				return new Argument(index + 0x8);
-			try {
-				n = parseInt(arg);
-				return new Argument(0x1e, n);
-			} catch (NumberFormatException _) {}
-				
-			if (labels.containsKey(arg))
-				return new Argument(0x1e, labels.get(arg));
-			if (arg.contains("+")) {
-				String split[] = arg.split("\\s*\\+\\s*", 2);
-				String other;
-				for (int i = 0; i < 2; i++) {
-					if ((index = Arrays.asList(registers).indexOf(split[i])) != -1) {
-						other = split[1 - i];
-						try {
-							n = parseInt(other);
-							return new Argument(index + 0x10, n);
-						} catch (NumberFormatException _) {}
-						return new Argument(other, index + 0x10, -1);
-					}
-				}
-				
+			
+			String s = scanner.next();
+			
+			int sign = s.startsWith("-") ? -1 : 1;
+			if (s.startsWith("+") || s.startsWith("-"))
+				s = s.substring(1);
+			
+			int radix = 10;
+			if (s.startsWith("0x") || s.startsWith("0X")) {
+				radix = 16;
+				s = s.substring(2);
+			}			
+			if (s.startsWith("0b") || s.startsWith("0B")) {
+				radix = 2;
+				s = s.substring(2);
 			}
 			
-			// This didn't match anything. It might be referencing a label (this gets fixed in insertLabels()).
-			return new Argument(arg, 0x1e, -1);
+			System.out.printf("Found integer %s in base %d.\n", s, radix);
+			return new IntArgument(sign * Integer.parseInt(s, radix));
 		}
 		
-		// Same here.
-		return new Argument(arg, 0x1f, -1);
+		public String toString() {
+			return Integer.toString(n);
+		}
 	}
 	
-	private static int parseInt(String s) throws NumberFormatException {
-		try {
-			int n = Integer.parseInt(s);
-			return n;
-		} catch (NumberFormatException _) {
-			// Whelp, it wasn't a decimal number.
-		}
-		int sign = 1;
-		if (s.startsWith("+") || s.startsWith("-")) {
-			sign = s.startsWith("+") ? 1 : -1;
-			s = s.substring(1);
-		}
-		if (s.toLowerCase().startsWith("0x")) {
-			try {
-				int n = Integer.parseInt(s.substring(2), 16);
-				return n * sign;
-			} catch (NumberFormatException _) {
-				// Whelp, it wasn't a hexadecimal number.				
-			}
-		}
-		if (s.toLowerCase().startsWith("0b")) {
-			try {
-				int n = Integer.parseInt(s.substring(2), 2);
-				return n * sign;
-			} catch (NumberFormatException _) {
-				// Also not binary.
-			}
+	abstract class Statement {
+		public abstract List<Character> compile();
+	}
+	
+	class Operation extends Statement {
+		String op;
+		Argument a, b;
+		boolean isBasic;
+		
+		public Operation(String op, Argument a, Argument b) {
+			this.op = op;
+			this.a = a;
+			this.b = b;
+			isBasic = (b != null);
 		}
 		
-		// I don't care if it's used by Integer.parseInt(), I'm stealing it! Muahahahaha!
-		throw new NumberFormatException("Could not convert string \"" + s + "\" to a decimal, hex, or binary number.");
+		public Operation(String op, Argument a) {
+			this.op = op;
+			this.a = a;
+			isBasic = false;
+		}
+		
+		private int binPad(int value) {
+			return Integer.parseInt(Integer.toBinaryString(value));
+		}
+		
+		public List<Character> compile() {
+			List<Character> result = new ArrayList<>();
+			int opcode = (isBasic ? basicOps : specialOps).indexOf(op) + 1;
+			
+			String format = String.format("%06d%05d%05d", binPad(a.getCode()), binPad(isBasic ? b.getCode() : opcode), binPad(isBasic ? opcode : 0));
+			System.out.printf("Compiled instruction %s %s, %s to %s.\n", op, b, a, format);
+			
+			result.add((char)Integer.parseInt(format, 2));
+			if (a.getExtraWord() != -1)
+				result.add((char)a.getExtraWord());
+			if (b.getExtraWord() != -1)
+				result.add((char)b.getExtraWord());
+			
+			return result;
+		}
 	}
 	
-	private static Argument handleStack(String s) {
-		if (s.equals("POP") || s.equals("PUSH"))
-			return new Argument(0x18);
-		if (s.equals("PEEK"))
-			return new Argument(0x19);
-		if (s.startsWith("PICK")) {
-			String[] split = s.split("\\s*(\\s|,)\\s*", 2);
-			return new Argument(0x1a, parseInt(split[1]));
+	private Scanner scanner;
+	
+	public List<Character> assemble(String input) {
+		scanner = new Scanner(input);
+		scanner.useDelimiter("\\s*(\\s|,)\\s*");
+		List<Character> output = new ArrayList<>();
+		
+		while (scanner.hasNext()) {
+			output.addAll(readStatement().compile());
+		}
+		
+		return output;
+	}
+
+	private Statement readStatement() {
+		for (String op : basicOps) {
+			if (scanner.hasNext(op) || scanner.hasNext(op.toLowerCase())) {
+				System.out.printf("Found op: %s\n", op);
+				scanner.next();
+				Argument b = readArgument();
+				Argument a = readArgument();
+				return new Operation(op, a, b);
+			}
 		}
 		return null;
 	}
 	
-	// Changes arguments into machine code.
-	public static char compile(int op, int a, int b) {
-		boolean isBasic = (b != -1);
-		
-		String sOp = String.format("%05d", Integer.parseInt(Integer.toBinaryString(op)));
-		String sA = String.format("%06d", Integer.parseInt(Integer.toBinaryString(a)));
-		String sB = isBasic ? String.format("%05d", Integer.parseInt(Integer.toBinaryString(b))) : "";
-		
-		return (char)Integer.parseInt(sA + sB + sOp + (isBasic ? "" : "00000"), 2);
-	}
-	
-	public static char compile(int op, int arg) {
-		return compile(op, arg, -1);
-	}
-	
-	public static void main(String args[]) {
-		String input = new Scanner(System.in).useDelimiter("\\A").next();
-		Assembler as = new Assembler();
-		for (int word : as.assemble(input))
-			System.out.printf("%04x\n", word);
+	private Argument readArgument() {
+		Argument arg;
+		if ((arg = RegisterArgument.read(scanner)) != null)
+			return arg;
+		if ((arg = IntArgument.read(scanner)) != null)
+			return arg;
+		return null;
 	}
 }

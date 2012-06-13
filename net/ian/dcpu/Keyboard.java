@@ -5,8 +5,6 @@ import java.awt.event.KeyListener;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.ian.dcpu.DCPU.Register;
-
 public class Keyboard extends Hardware implements KeyListener {
 	public static final int ID = 0x30cf7406;
 	public static final int VERSION = 1;

@@ -5,10 +5,8 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
-
 import javax.imageio.ImageIO;
 
-import net.ian.dcpu.DCPU.Register;
 
 public class Monitor extends Hardware implements MemoryListener {
 	public static final int ID = 0x7349f615;

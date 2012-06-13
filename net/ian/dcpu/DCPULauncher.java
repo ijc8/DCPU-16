@@ -7,10 +7,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.swing.*;
 
-import net.ian.dcpu.DCPU.Register;
 
 public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 	private static final long serialVersionUID = 1L;
@@ -141,14 +139,12 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 		if (command.equals("run")) {
 			cpu.running = false;
 			cpu.clear(assembler.assemble(codeEntry.getText()));
-			cpu.labels = reverseLabels();
 			
 			new Thread(cpu).start();
 			new Thread(this).start();
 		} else if (command.equals("step")) {
 			if (!started) {
 				cpu.clear(assembler.assemble(codeEntry.getText()));
-				cpu.labels = reverseLabels();
 				
 				started = true;
 				cpu.running = true;
@@ -158,14 +154,6 @@ public class DCPULauncher extends JPanel implements ActionListener, Runnable {
 			tick();
 		} else if (command.equals("stop"))
 			cpu.running = false;
-	}
-	
-	private Map<Integer, String> reverseLabels() {
-		Map<String, Integer> labels = assembler.labels;
-		Map<Integer, String> reversed = new HashMap<>();
-		for (Map.Entry<String, Integer> pair : labels.entrySet())
-			reversed.put(pair.getValue(), pair.getKey());
-		return reversed;
 	}
 	
 	public void run() {
