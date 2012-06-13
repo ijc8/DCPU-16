@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Scanner;
+import java.util.regex.MatchResult;
+import java.util.regex.Pattern;
 
 public class Assembler {
 	
@@ -21,6 +23,8 @@ public class Assembler {
 			"HWQ", "HWI", "   ", "   ", "   ", "   ", "   ", "   ",
 			"   ", "   ", "   ", "   ", "   ", "   ", "   "
 	);
+	
+	public static enum Special { SP, PC, EX }; 
 	
 	abstract static class Argument {
 		public abstract char getCode();
@@ -47,7 +51,7 @@ public class Assembler {
 		
 		public static RegisterArgument read(Scanner scanner) {
 			for (Register r : Register.values()) {
-				if (scanner.hasNext(r.toString()) || scanner.hasNext(r.toString().toLowerCase())) {
+				if (scanner.hasNext("(?i)" + r.toString())) {
 					scanner.next();
 					System.out.printf("Found register: %s\n", r.toString());
 					return new RegisterArgument(r);
@@ -59,6 +63,71 @@ public class Assembler {
 		
 		public String toString() {
 			return register.toString();
+		}
+	}
+	
+	static class SpecialArgument extends Argument {
+		Special special;
+		
+		public SpecialArgument(Special s) {
+			special = s;
+		}
+		
+		public char getCode() {
+			return (char)(special.ordinal() + 0x1b);
+		}
+		
+		public static SpecialArgument read(Scanner scanner) {
+			for (Special s : Special.values()) {
+				if (scanner.hasNext("(?i)" + s.toString())) {
+					scanner.next();
+					System.out.printf("Found special: %s\n", s.toString());
+					return new SpecialArgument(s);
+				}
+			}
+			
+			return null;
+		}
+		
+		public String toString() {
+			return special.toString();
+		}
+	}
+	
+	static class RegisterDeref extends Argument {
+		Register register;
+		
+		public RegisterDeref(Register r) {
+			register = r;
+		}
+		
+		public char getCode() {
+			return (char)(0x8 + register.ordinal());
+		}
+		
+		public static RegisterDeref read(Scanner scanner) {
+			Pattern backup = scanner.delimiter();
+			scanner.useDelimiter("(?<=])");
+			if (!scanner.hasNext("(?i)\\s*,?\\s*\\[\\s*([ABCXYZIJ])\\s*,?\\s*\\]")) {
+				scanner.useDelimiter(backup);
+				return null;
+			}
+			String register = scanner.match().group(1);
+			scanner.next();
+			scanner.useDelimiter(backup);
+			
+			for (Register r : Register.values()) {
+				if (r.toString().equalsIgnoreCase(register)) {
+					System.out.printf("Found register deref: [%s]\n", register);
+					return new RegisterDeref(r);
+				}
+			}
+			
+			return null;
+		}
+		
+		public String toString() {
+			return "[" + register + "]";
 		}
 	}
 	
@@ -87,7 +156,7 @@ public class Assembler {
 		}
 		
 		public static IntArgument read(Scanner scanner) {
-			if (!scanner.hasNext("[+-]?(0[XxBb])?\\d+"))
+			if (!scanner.hasNext("(?i)[+-]?(0[xb])?[\\da-f]+"))
 				return null;
 			
 			String s = scanner.next();
@@ -107,11 +176,78 @@ public class Assembler {
 			}
 			
 			System.out.printf("Found integer %s in base %d.\n", s, radix);
-			return new IntArgument(sign * Integer.parseInt(s, radix));
+			try {
+				return new IntArgument(sign * Integer.parseInt(s, radix));
+			} catch (NumberFormatException _) {
+				// Invalid string for that base
+				// For example, 0b1234 or ffff (notice the lack of 0x).
+				// Also, ffff is a valid label, so this might not be an error.
+				System.out.printf("Error: %d: format error in integer %s in base %s.\n", scanner.match().start(), s, radix);
+				return null;
+			}
 		}
 		
 		public String toString() {
 			return Integer.toString(n);
+		}
+	}
+	
+	static class IntReference extends Argument {
+		char n;
+		
+		public IntReference(char n) {
+			this.n = n;
+		}
+		
+		public IntReference(int n) {
+			this.n = (char)n;
+		}
+		
+		public char getCode() {
+			return 0x1e; // [next word]
+		}
+		
+		public int getExtraWord() {
+			return n;
+		}
+		
+		public static IntReference read(Scanner scanner) {
+			Pattern backup = scanner.delimiter();
+			scanner.useDelimiter("(?<=])");
+			if (!scanner.hasNext("(?i)\\s*,?\\s*\\[\\s*([+-]?(?:0[xb])?[\\da-f]+)\\s*,?\\s*\\]")) {
+				scanner.useDelimiter(backup);
+				return null;
+			}
+			MatchResult m = scanner.match();
+			String s = m.group(1);
+			scanner.next();
+			scanner.useDelimiter(backup);
+					
+			int sign = s.startsWith("-") ? -1 : 1;
+			if (s.startsWith("+") || s.startsWith("-"))
+				s = s.substring(1);
+			
+			int radix = 10;
+			if (s.startsWith("0x") || s.startsWith("0X")) {
+				radix = 16;
+				s = s.substring(2);
+			}			
+			if (s.startsWith("0b") || s.startsWith("0B")) {
+				radix = 2;
+				s = s.substring(2);
+			}
+			
+			System.out.printf("Found integer reference %s in base %d.\n", s, radix);
+			try {
+				return new IntReference(sign * Integer.parseInt(s, radix));
+			} catch (NumberFormatException _) {
+				System.out.printf("Error: %d: format error in integer %s in base %s.\n", m.start(1), s, radix);
+				return null;
+			}
+		}
+		
+		public String toString() {
+			return "[" + (int)n + "]";
 		}
 	}
 	
@@ -151,7 +287,7 @@ public class Assembler {
 			result.add((char)Integer.parseInt(format, 2));
 			if (a.getExtraWord() != -1)
 				result.add((char)a.getExtraWord());
-			if (b.getExtraWord() != -1)
+			if (isBasic && b.getExtraWord() != -1)
 				result.add((char)b.getExtraWord());
 			
 			return result;
@@ -174,12 +310,21 @@ public class Assembler {
 
 	private Statement readStatement() {
 		for (String op : basicOps) {
-			if (scanner.hasNext(op) || scanner.hasNext(op.toLowerCase())) {
-				System.out.printf("Found op: %s\n", op);
+			if (scanner.hasNext("(?i)" + op)) {
+				System.out.printf("Found basic op: %s\n", op);
 				scanner.next();
 				Argument b = readArgument();
 				Argument a = readArgument();
 				return new Operation(op, a, b);
+			}
+		}
+		
+		for (String op : specialOps) {
+			if (scanner.hasNext("(?i)" + op)) {
+				System.out.printf("Found special op: %s\n", op);
+				scanner.next();
+				Argument a = readArgument();
+				return new Operation(op, a);
 			}
 		}
 		return null;
@@ -189,8 +334,15 @@ public class Assembler {
 		Argument arg;
 		if ((arg = RegisterArgument.read(scanner)) != null)
 			return arg;
+		if ((arg = SpecialArgument.read(scanner)) != null)
+			return arg;
+		if ((arg = RegisterDeref.read(scanner)) != null)
+			return arg;
 		if ((arg = IntArgument.read(scanner)) != null)
 			return arg;
+		if ((arg = IntReference.read(scanner)) != null)
+			return arg;
+		System.out.println("Error: Unable to read argument.");
 		return null;
 	}
 }
