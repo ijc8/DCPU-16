@@ -251,6 +251,87 @@ public class Assembler {
 		}
 	}
 	
+	static class IndirectReference extends Argument {
+		Register register;
+		char n;
+		
+		public IndirectReference(Register r, char n) {
+			register = r;
+			this.n = n;
+		}
+		
+		public IndirectReference(Register r, int n) {
+			this(r, (char)n);
+		}
+		
+		public char getCode() {
+			return (char)(register.ordinal() + 0x10);
+		}
+		
+		public int getExtraWord() {
+			return n;
+		}
+		
+		public static IndirectReference read(Scanner scanner) {
+			Pattern backup = scanner.delimiter();
+			scanner.useDelimiter("(?<=])");
+			// Oh god why
+			if (!scanner.hasNext("(?i)\\s*,?\\s*\\[\\s*((?:[+-]?(?:0[xb])?[\\da-f]+)|[ABCXYZIJ])\\s*\\+\\s*((?:[+-]?(?:0[xb])?[\\da-f]+)|[ABCXYZIJ])\\s*,?\\s*\\]")) {
+				scanner.useDelimiter(backup);
+				return null;
+			}
+			MatchResult m = scanner.match();
+			String thing1 = m.group(1);
+			String thing2 = m.group(2);
+			scanner.next();
+			scanner.useDelimiter(backup);
+			
+			String register = null, n = null;
+			if (thing1.matches("(?i)[ABCXYZIJ]")) {
+				register = thing1;
+				n = thing2;
+				if (!n.matches("(?i)[+-]?(?:0[xb])?[\\da-f]+")) {
+					System.out.printf("Error: %d: Expected integer in indirect reference, got %s.\n", m.start(2), n);
+					return null;
+				}
+			} else {
+				n = thing1;
+				register = thing2;
+				if (!register.matches("(?i)[ABCXYZIJ]")) {
+					System.out.printf("Error: %d: Expected register in indirected reference, got %s.\n", m.start(2), register);
+					return null;
+				}
+			}
+			String original = n;
+					
+			int sign = n.startsWith("-") ? -1 : 1;
+			if (n.startsWith("+") || n.startsWith("-"))
+				n = n.substring(1);
+			
+			int radix = 10;
+			if (n.startsWith("0x") || n.startsWith("0X")) {
+				radix = 16;
+				n = n.substring(2);
+			}			
+			if (n.startsWith("0b") || n.startsWith("0B")) {
+				radix = 2;
+				n = n.substring(2);
+			}
+			
+			System.out.printf("Found integer reference %s in base %d.\n", n, radix);
+			try {
+				return new IndirectReference(stringToRegister(register), sign * Integer.parseInt(n, radix));
+			} catch (NumberFormatException _) {
+				System.out.printf("Error: %d: format error in integer in indirect reference %s in base %s.\n", m.start(original.equals(thing1) ? 1 : 2), n, radix);
+				return null;
+			}
+		}
+		
+		public String toString() {
+			return "[" + register + "+" + (int)n + "]";
+		}
+	}
+	
 	abstract class Statement {
 		public abstract List<Character> compile();
 	}
@@ -342,7 +423,18 @@ public class Assembler {
 			return arg;
 		if ((arg = IntReference.read(scanner)) != null)
 			return arg;
-		System.out.println("Error: Unable to read argument.");
+		if ((arg = IndirectReference.read(scanner)) != null)
+			return arg;
+		String s = scanner.next();
+		System.out.printf("Error: %d: Unexpected token: %s\n", scanner.match().start(), s);
+		return null;
+	}
+	
+	public static Register stringToRegister(String s) {
+		for (Register r : Register.values()) {
+			if (r.toString().equalsIgnoreCase(s))
+				return r;
+		}
 		return null;
 	}
 }
