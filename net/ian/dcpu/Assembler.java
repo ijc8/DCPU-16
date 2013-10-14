@@ -79,7 +79,7 @@ public class Assembler {
 
 			if (c.length == 0)
 				continue;
-			line = c[0];
+			line = c[0].trim();
 			if (line.isEmpty())
 				continue;
 			
