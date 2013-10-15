@@ -3,7 +3,6 @@ package net.ian.dcpu;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -80,7 +79,7 @@ public class Assembler {
 
 			if (c.length == 0)
 				continue;
-			line = c[0];
+			line = c[0].trim();
 			if (line.isEmpty())
 				continue;
 			
@@ -99,32 +98,31 @@ public class Assembler {
 					continue;
 			}
 			
-			String[] tokens = line.split("\\s*(,|\\s)\\s*");
-			
+			// Split instruction and args
+			String[] tokens = line.split("\\s+", 2);
+
 			if (tokens.length < 2)
 				continue;
-			
+
 			if (tokens[0].equalsIgnoreCase("DAT")) {
-				instructions.addAll(parseDat(line, tokens));
+				instructions.addAll(parseDat(line));
 				continue;
 			}
 			
-			// Kind of dirty. Combines PICK with the next argument,
-			// so you get something like "PICK 5" in one argument.
-			// Also: Turns out Arrays.asList returns an unmodifiable list.
-			List<String> tokenList = new LinkedList<String>(Arrays.asList(tokens));
-			for (int i = 0; i < tokenList.size(); i++) {
-				if (tokenList.get(i).equalsIgnoreCase("PICK")) {
-					tokenList.set(i, tokenList.get(i) + " " + tokenList.get(i+1));
-					tokenList.remove(i+1);
-				}
-			}
-			
-			String op = tokenList.get(0);
-			String arg1 = tokenList.get(1);
+			String op = tokens[0];
+
+			// Split args separated by comma
+			// Nested expressions such as "PICK N" will not be splitted
+			String[] args = tokens[1].split("\\s*,\\s*");
+
+			// more than 2 arguments ? error
+			if (args.length > 2)
+				continue;
+
+			String arg1 = args[0];
 			String arg2 = null;
-			if (tokens.length > 2)
-				arg2 = tokenList.get(2);
+			if (args.length == 2)
+				arg2 = args[1];
 			List<Character> assembled = assemble(op, arg1, arg2);
 			if (assembled == null)
 				instructions.add((char)0);
@@ -137,7 +135,7 @@ public class Assembler {
 		return instructions;
 	}
 	
-	private List<Character> parseDat(String line, String[] tokens) {
+	private List<Character> parseDat(String line) {
 		List<Character> data = new ArrayList<>();
 		
 		line = line.trim();
