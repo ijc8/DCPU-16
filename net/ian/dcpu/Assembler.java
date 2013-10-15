@@ -177,8 +177,19 @@ public class Assembler {
 					line = split[1];
 					continue;
 				}
-				data.add((char)parseInt(num));
-				line = line.substring(num.length());
+				int size = num.length();
+				// it may be a label reference
+				if (labels.containsKey(num.toUpperCase())) {
+					num = labels.get(num.toUpperCase()).toString();
+				}
+				try {
+					data.add((char)parseInt(num));
+				} catch (NumberFormatException e) {
+					// Maybe it is a label not declared yet
+					fixes.put(instructions.size() + data.size(), num.toUpperCase());
+					data.add((char)-1);
+				}
+				line = line.substring(size);
 			}
 			line = line.trim();
 		}
@@ -191,7 +202,7 @@ public class Assembler {
 		for (Map.Entry<Integer, String> entry : fixes.entrySet()) {
 			int index = entry.getKey();
 			String label = entry.getValue();
-			System.err.printf("Fixing: %s at %d\n", label, index);
+//			System.err.printf("Fixing: %s at %d\n", label, index);
 			Integer loc;
 			if ((loc = labels.get(label)) != null) {
 				instructions.set(index, (char)(int)loc);
