@@ -537,11 +537,12 @@ public class DCPU implements Runnable {
 		List<Character> code = new ArrayList<>();
 		while (s.hasNextInt(16))
 			code.add((char)s.nextInt(16));
+		s.close();
 		
 		DCPU cpu = new DCPU(code);
 		Monitor monitor = new Monitor(cpu);
 		Keyboard keyboard = new Keyboard(cpu);
-		Clock clock = new Clock(cpu);
+		new Clock(cpu);
 		
 		cpu.panel = new MonitorPanel(monitor);
 		cpu.panel.addKeyListener(keyboard);

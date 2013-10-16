@@ -51,7 +51,9 @@ public class Monitor extends Hardware implements MemoryListener {
 	public Color borderColor = Color.BLACK;
 		
 	private DCPU cpu;
-	private char memStart, fontStart, paletteStart;
+	// Defaulting to 0x8000 isn't in the current spec,
+	// but some legacy programs require it.
+	private char memStart = 0x8000, fontStart, paletteStart;
 
 	public boolean shouldRender;
 	

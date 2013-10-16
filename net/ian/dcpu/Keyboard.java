@@ -60,7 +60,6 @@ public class Keyboard extends Hardware implements KeyListener {
 			addKey((char)key);
 		shouldInterrupt = true;
 		keyStates[key] = true;
-		System.err.printf("Key press: %d (dcpu: %d)\n", e.getKeyCode(), key);
 	}
 
 	@Override
@@ -69,7 +68,6 @@ public class Keyboard extends Hardware implements KeyListener {
 		if (key == -1) return;
 		shouldInterrupt = true;
 		keyStates[key] = false;
-		System.err.printf("Key release: %d (dcpu: %d)\n", e.getKeyCode(), key);
 	}
 	
 	@Override
@@ -77,7 +75,6 @@ public class Keyboard extends Hardware implements KeyListener {
 		if (e.getKeyChar() >= 0x20 && e.getKeyChar() <= 0x7f) {
 			addKey(e.getKeyChar());
 			shouldInterrupt = true;
-			System.err.printf("Key typed: %d = %c\n", (int)e.getKeyChar(), e.getKeyChar());
 		}
 	}
 	

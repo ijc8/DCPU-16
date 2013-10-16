@@ -112,10 +112,9 @@ public class Assembler {
 			String op = tokens[0];
 
 			// Split args separated by comma
-			// Nested expressions such as "PICK N" will not be splitted
+			// Nested expressions such as "PICK N" will not be split.
 			String[] args = tokens[1].split("\\s*,\\s*");
 
-			// more than 2 arguments ? error
 			if (args.length > 2)
 				continue;
 
@@ -177,11 +176,15 @@ public class Assembler {
 					line = split[1];
 					continue;
 				}
-				int size = num.length();
-				// it may be a label reference
+				
+				line = line.substring(num.length());
+				
+				// It may be a label reference
 				if (labels.containsKey(num.toUpperCase())) {
-					num = labels.get(num.toUpperCase()).toString();
+					data.add((char)(int)labels.get(num.toUpperCase()));
+					continue;
 				}
+				
 				try {
 					data.add((char)parseInt(num));
 				} catch (NumberFormatException e) {
@@ -189,7 +192,6 @@ public class Assembler {
 					fixes.put(instructions.size() + data.size(), num.toUpperCase());
 					data.add((char)-1);
 				}
-				line = line.substring(size);
 			}
 			line = line.trim();
 		}
@@ -202,12 +204,11 @@ public class Assembler {
 		for (Map.Entry<Integer, String> entry : fixes.entrySet()) {
 			int index = entry.getKey();
 			String label = entry.getValue();
-//			System.err.printf("Fixing: %s at %d\n", label, index);
 			Integer loc;
 			if ((loc = labels.get(label)) != null) {
 				instructions.set(index, (char)(int)loc);
 			} else
-				System.err.printf("Error: True assembly error (in insertLabels): %s at %d\n", label, index);
+				System.err.printf("Error: Assembly error: %s at %d\n", label, index);
 		}
 	}
 	
@@ -384,7 +385,10 @@ public class Assembler {
 	}
 	
 	public static void main(String args[]) {
-		String input = new Scanner(System.in).useDelimiter("\\A").next();
+		Scanner s = new Scanner(System.in);
+		String input = s.useDelimiter("\\A").next();
+		s.close();
+		
 		Assembler as = new Assembler();
 		for (int word : as.assemble(input))
 			System.out.printf("%04x\n", word);
